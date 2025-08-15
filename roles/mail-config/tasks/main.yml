@@ -1,0 +1,33 @@
+---
+- name: Install ssmtp
+  apt:
+    name: ssmtp
+    state: present
+
+- name: Configure ssmtp
+  template:
+    src: ssmtp.conf.j2
+    dest: /etc/ssmtp/ssmtp.conf
+    backup: yes
+    mode: '0644'
+
+- name: Configure apt-listchanges to use ssmtp
+  lineinfile:
+    path: /etc/apt/listchanges.conf
+    regexp: '^#?frontend='
+    line: 'frontend=mail'
+    backup: yes
+
+- name: Set apt-listchanges email method to use sendmail (ssmtp)
+  lineinfile:
+    path: /etc/apt/listchanges.conf
+    regexp: '^#?email_address='
+    line: 'email_address=root'
+    backup: yes
+
+- name: Ensure apt-listchanges uses the correct mail command
+  lineinfile:
+    path: /etc/apt/listchanges.conf
+    regexp: '^#?which='
+    line: 'which=both'
+    backup: yes

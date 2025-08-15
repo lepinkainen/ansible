@@ -1,0 +1,28 @@
+---
+- name: Ensure user exists
+  user:
+    name: "{{ server_user }}"
+    shell: "{{ user_shell }}"
+    state: present
+  when: server_user != "root"
+
+- name: Add user to groups
+  user:
+    name: "{{ server_user }}"
+    groups: "{{ user_groups }}"
+    append: yes
+  when: server_user != "root"
+
+- name: Change shell for existing user
+  user:
+    name: "{{ server_user }}"
+    shell: "{{ user_shell }}"
+  when: server_user != "root"
+
+- name: Install fisher for fish shell
+  become_user: "{{ server_user }}"
+  shell: |
+    curl -sL https://git.io/fisher | fish -c 'source; and fisher install jorgebucaran/fisher'
+  args:
+    creates: ~/.config/fish/functions/fisher.fish
+  when: user_shell == "/usr/bin/fish"

@@ -1,0 +1,23 @@
+---
+- name: Complete Debian server setup
+  hosts: debian_servers
+  become: yes
+  
+  roles:
+    - system-basics
+    - packages
+    - user-management
+    - mail-config
+    - unattended-upgrades
+
+  post_tasks:
+    - name: Display setup completion message
+      debug:
+        msg: |
+          Server setup completed successfully!
+          
+          Next steps:
+          1. Configure your hostname if needed: hostnamectl set-hostname <hostname>
+          2. Apply Chezmoi setup for user-level configurations
+          3. Verify mail configuration is working
+          4. Test unattended upgrades functionality

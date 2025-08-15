@@ -1,0 +1,40 @@
+---
+# System Configuration
+timezone: "{{ lookup('env', 'ANSIBLE_TIMEZONE') | default('Europe/Helsinki') }}"
+locales:
+  - "en_US.UTF-8"
+  - "en_GB.UTF-8"
+
+# User Configuration
+server_user: "{{ lookup('env', 'ANSIBLE_TARGET_USER') | default(ansible_user | default('root')) }}"
+user_shell: "/usr/bin/fish"
+user_groups:
+  - sudo
+  - docker
+
+# Package Configuration
+core_packages:
+  - fish
+  - mosh
+  - tmux
+  - fzf
+  - rsync
+  - htop
+  - unattended-upgrades
+  - ssmtp
+
+# Install starship on non-ARM systems
+install_starship: true
+
+# Mail Configuration
+mail_config:
+  smtp_host: "{{ lookup('env', 'ANSIBLE_SMTP_HOST') | default('localhost:8025') }}"
+  use_tls: "{{ lookup('env', 'ANSIBLE_SMTP_TLS') | default('false') | bool }}"
+  use_starttls: "{{ lookup('env', 'ANSIBLE_SMTP_STARTTLS') | default('false') | bool }}"
+  from_line_override: true
+
+# Unattended Upgrades Configuration
+unattended_upgrades:
+  email: "{{ lookup('env', 'ANSIBLE_NOTIFICATION_EMAIL') | default('root@localhost') }}"
+  automatic_reboot: "{{ lookup('env', 'ANSIBLE_AUTO_REBOOT') | default('true') | bool }}"
+  automatic_reboot_time: "{{ lookup('env', 'ANSIBLE_REBOOT_TIME') | default('02:00') }}"

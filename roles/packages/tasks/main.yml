@@ -1,0 +1,19 @@
+---
+- name: Install core packages
+  apt:
+    name: "{{ core_packages }}"
+    state: present
+    update_cache: yes
+
+- name: Check if system is ARM architecture
+  set_fact:
+    is_arm: "{{ ansible_architecture in ['aarch64', 'arm64', 'armv7l'] }}"
+
+- name: Install Starship prompt (non-ARM systems only)
+  shell: |
+    curl -fsSL https://starship.rs/install.sh | sh -s -- --yes
+  args:
+    creates: /usr/local/bin/starship
+  when: 
+    - install_starship | bool
+    - not is_arm

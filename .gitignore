@@ -1,0 +1,38 @@
+# Environment-specific configuration
+.env
+.env.local
+.env.production
+
+# Actual inventory files (keep templates only)
+inventory/production
+inventory/staging
+inventory/local
+
+# Ansible Vault files
+vault.yml
+vault.yaml
+group_vars/*/vault.yml
+host_vars/*/vault.yml
+
+# Sensitive variable overrides
+group_vars/*/secrets.yml
+host_vars/*/secrets.yml
+
+# Local development files
+*.retry
+.ansible/
+
+# SSH keys and certificates
+*.pem
+*.key
+*.crt
+
+# Backup files created by Ansible
+*.backup
+*~
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo

@@ -1,0 +1,30 @@
+---
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install unattended-upgrades package
+  apt:
+    name: unattended-upgrades
+    state: present
+
+- name: Configure unattended-upgrades
+  template:
+    src: 50unattended-upgrades.j2
+    dest: /etc/apt/apt.conf.d/50unattended-upgrades
+    backup: yes
+  notify: restart unattended-upgrades
+
+- name: Configure auto upgrades
+  template:
+    src: 20auto-upgrades.j2
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    backup: yes
+  notify: restart unattended-upgrades
+
+- name: Enable and start unattended-upgrades service
+  systemd:
+    name: unattended-upgrades
+    enabled: yes
+    state: started
