@@ -1,0 +1,40 @@
+---
+# Non-sensitive configuration variables
+
+# System Configuration
+timezone: Europe/Helsinki
+locales:
+  - "en_US.UTF-8"
+  - "en_GB.UTF-8"
+
+# Package Configuration
+core_packages:
+  - fish
+  - mosh
+  - tmux
+  - fzf
+  - rsync
+  - htop
+  - curl
+  - unattended-upgrades
+  - ssmtp
+
+# Install starship on non-ARM systems
+install_starship: true
+
+# User Configuration
+user_shell: "/usr/bin/fish"
+user_groups:
+  - sudo
+  - docker
+
+# Mail Configuration (non-sensitive)
+mail_config:
+  use_tls: false
+  use_starttls: false
+  from_line_override: true
+
+# Unattended Upgrades Configuration (non-sensitive)
+unattended_upgrades:
+  automatic_reboot: true
+  automatic_reboot_time: "02:00"

@@ -1,0 +1,19 @@
+---
+# Main configuration - references vault variables and config.yml
+
+# System Configuration (sensitive)
+hostname: "{{ vault_hostname }}"
+server_user: "{{ vault_target_user }}"
+
+# Mail Configuration (mixed sensitive/non-sensitive)
+mail_config:
+  smtp_host: "{{ vault_smtp_host }}"
+  use_tls: "{{ mail_config.use_tls | default(false) }}"
+  use_starttls: "{{ mail_config.use_starttls | default(false) }}"
+  from_line_override: true
+
+# Unattended Upgrades Configuration (mixed sensitive/non-sensitive)
+unattended_upgrades:
+  email: "{{ vault_notification_email }}"
+  automatic_reboot: "{{ unattended_upgrades.automatic_reboot | default(true) }}"
+  automatic_reboot_time: "{{ unattended_upgrades.automatic_reboot_time | default('02:00') }}"

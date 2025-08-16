@@ -1,0 +1,12 @@
+---
+# Sensitive configuration variables - template for Ansible Vault
+# Copy this file to vault.yml and customize, then encrypt with:
+# ansible-vault encrypt inventory/group_vars/debian_servers/vault.yml
+
+# System Configuration
+vault_hostname: your-server-hostname
+vault_target_user: your-deployment-user
+
+# Mail Configuration
+vault_smtp_host: your-smtp-server:587
+vault_notification_email: your-admin@example.com
