@@ -1,5 +1,6 @@
 ---
 # System Configuration
+hostname: "{{ lookup('env', 'ANSIBLE_HOSTNAME') or inventory_hostname }}"
 timezone: "{{ lookup('env', 'ANSIBLE_TIMEZONE') or 'Europe/Helsinki' }}"
 locales:
   - "en_US.UTF-8"
