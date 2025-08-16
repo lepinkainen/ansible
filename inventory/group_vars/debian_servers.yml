@@ -1,12 +1,12 @@
 ---
 # System Configuration
-timezone: "{{ lookup('env', 'ANSIBLE_TIMEZONE') | default('Europe/Helsinki') }}"
+timezone: "{{ lookup('env', 'ANSIBLE_TIMEZONE') or 'Europe/Helsinki' }}"
 locales:
   - "en_US.UTF-8"
   - "en_GB.UTF-8"
 
 # User Configuration
-server_user: "{{ lookup('env', 'ANSIBLE_TARGET_USER') | default(ansible_user | default('root')) }}"
+server_user: "{{ lookup('env', 'ANSIBLE_TARGET_USER') or ansible_user | default('root') }}"
 user_shell: "/usr/bin/fish"
 user_groups:
   - sudo
@@ -28,13 +28,13 @@ install_starship: true
 
 # Mail Configuration
 mail_config:
-  smtp_host: "{{ lookup('env', 'ANSIBLE_SMTP_HOST') | default('localhost:8025') }}"
-  use_tls: "{{ lookup('env', 'ANSIBLE_SMTP_TLS') | default('false') | bool }}"
-  use_starttls: "{{ lookup('env', 'ANSIBLE_SMTP_STARTTLS') | default('false') | bool }}"
+  smtp_host: "{{ lookup('env', 'ANSIBLE_SMTP_HOST') or 'localhost:8025' }}"
+  use_tls: "{{ lookup('env', 'ANSIBLE_SMTP_TLS') or 'false' | bool }}"
+  use_starttls: "{{ lookup('env', 'ANSIBLE_SMTP_STARTTLS') or 'false' | bool }}"
   from_line_override: true
 
 # Unattended Upgrades Configuration
 unattended_upgrades:
-  email: "{{ lookup('env', 'ANSIBLE_NOTIFICATION_EMAIL') | default('root@localhost') }}"
-  automatic_reboot: "{{ lookup('env', 'ANSIBLE_AUTO_REBOOT') | default('true') | bool }}"
-  automatic_reboot_time: "{{ lookup('env', 'ANSIBLE_REBOOT_TIME') | default('02:00') }}"
+  email: "{{ lookup('env', 'ANSIBLE_NOTIFICATION_EMAIL') or 'root@localhost' }}"
+  automatic_reboot: "{{ lookup('env', 'ANSIBLE_AUTO_REBOOT') or 'true' | bool }}"
+  automatic_reboot_time: "{{ lookup('env', 'ANSIBLE_REBOOT_TIME') or '02:00' }}"

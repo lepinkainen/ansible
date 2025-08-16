@@ -36,3 +36,4 @@ host_vars/*/secrets.yml
 .idea/
 *.swp
 *.swo
+.envrc

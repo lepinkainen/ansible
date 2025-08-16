@@ -1,7 +1,7 @@
 ---
 - name: Bootstrap new Debian servers
   hosts: debian_servers
-  become: yes
+  become: true
   
   roles:
     - system-basics
