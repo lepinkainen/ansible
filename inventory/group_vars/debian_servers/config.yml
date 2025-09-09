@@ -26,7 +26,6 @@ install_starship: true
 user_shell: "/usr/bin/fish"
 user_groups:
   - sudo
-  - docker
 
 # Mail Configuration (non-sensitive)
 mail_config:

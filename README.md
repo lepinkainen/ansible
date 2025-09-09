@@ -104,9 +104,21 @@ Note: Passwords are automatically retrieved from 1Password - no need for `--ask-
 
 - Sets hostname and timezone
 - Installs essential packages (fish, tmux, htop, curl, etc.)
-- Configures user with fish shell and docker/sudo groups
+- Configures user with fish shell and sudo group
 - Sets up automated security updates with email notifications
 - Configures mail delivery via SSMTP
+
+## Optional: Docker Setup
+
+Docker is not installed by default. If you need Docker on specific servers, add to that server's host_vars:
+
+```yaml
+# inventory/host_vars/hostname/config.yml
+user_groups:
+  - sudo
+  - docker
+install_docker: true  # Future enhancement - will install Docker automatically
+```
 
 ## Customization
 
