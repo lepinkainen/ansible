@@ -1,8 +1,8 @@
 ---
 - name: Complete Debian server setup
   hosts: debian_servers
-  become: yes
-  
+  become: true
+
   roles:
     - system-basics
     - packages
@@ -16,7 +16,7 @@
       debug:
         msg: |
           Server setup completed successfully!
-          
+
           Next steps:
           1. Configure your hostname if needed: hostnamectl set-hostname <hostname>
           2. Apply Chezmoi setup for user-level configurations

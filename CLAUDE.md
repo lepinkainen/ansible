@@ -150,16 +150,10 @@ ansible-vault decrypt inventory/group_vars/debian_servers/vault.yml
 
 ## Usage Commands
 
-**Complete server setup (vault-based):**
+**Complete server setup:**
 
 ```bash
 ansible-playbook playbooks/site.yml --ask-become-pass
-```
-
-**Bootstrap new servers:**
-
-```bash
-ansible-playbook playbooks/bootstrap.yml --ask-become-pass
 ```
 
 **Dry run (check mode):**
@@ -257,9 +251,11 @@ For development environments using `.env`:
 
 ### Adding New Servers
 
-1. Add entries to `inventory/production`
-2. Test connection: `ansible debian_servers -m ping`
-3. Run bootstrap: `ansible-playbook playbooks/bootstrap.yml --check`
+1. Manually create `deploy` user on new server (see README)
+2. Add entries to `inventory/production` with `ansible_user=deploy`
+3. Create `host_vars/[hostname]/vault.yml` with `vault_hostname`
+4. Test connection: `ansible debian_servers -m ping`
+5. Run setup: `ansible-playbook playbooks/site.yml --limit hostname --check`
 
 ### Adding New Configuration
 

@@ -3,13 +3,6 @@
 .env.local
 .env.production
 
-
-# Ansible Vault files
-vault.yml
-vault.yaml
-group_vars/*/vault.yml
-host_vars/*/vault.yml
-
 # Sensitive variable overrides
 group_vars/*/secrets.yml
 host_vars/*/secrets.yml

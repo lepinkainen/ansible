@@ -4,9 +4,29 @@ Quick setup guide for running the playbook on a clean Debian installation.
 
 ## Prerequisites
 
-- Fresh Debian 13 installation with sudo access
+- Fresh Debian 13 installation with sudo access (see setup below if needed)
 - 1Password CLI installed and authenticated
 - Vault password stored in 1Password at `Development/Ansible Vault`
+
+### Setting up deploy user and sudo access
+
+Create a dedicated `deploy` user for Ansible operations:
+
+```bash
+# On the Debian server as root or existing sudo user
+apt update && apt install sudo
+
+# Create deploy user
+/usr/sbin/adduser deploy
+/usr/sbin/usermod -aG sudo deploy
+
+# Set up SSH key for deploy user (from your local machine)
+ssh-copy-id deploy@192.168.1.139
+
+# Test deploy user access (from your local machine)
+ssh deploy@192.168.1.139
+sudo whoami  # Should return 'root'
+```
 
 ## Setup Steps
 
@@ -33,7 +53,9 @@ brew install --cask 1password-cli
 # Authenticate
 op signin
 
-# Store your vault password in 1Password at: Development/Ansible Vault
+# Store required passwords in 1Password:
+# - Vault password at: Development/Ansible Vault/password
+# - Deploy user password at: Development/Ansible Deploy user/password
 # Then create vault from template
 cp inventory/group_vars/debian_servers/vault.yml.example inventory/group_vars/debian_servers/vault.yml
 
@@ -43,8 +65,8 @@ ansible-vault edit inventory/group_vars/debian_servers/vault.yml
 
 Required vault variables:
 
-- `vault_hostname`: Your desired server hostname
-- `vault_target_user`: Your username (current user)
+- `vault_hostname`: Your desired server hostname (host-specific in host_vars/)
+- `vault_target_user`: The user account to manage (usually `deploy`)
 - `vault_smtp_host`: SMTP server (or localhost:8025 for testing)
 - `vault_notification_email`: Your email address
 
@@ -67,12 +89,14 @@ The inventory file is encrypted with Ansible Vault for security.
 ### 5. Run Playbook
 
 ```bash
-# Bootstrap (minimal setup)
-ansible-playbook playbooks/bootstrap.yml --ask-become-pass
+# Run complete server setup (passwords retrieved from 1Password automatically)
+ansible-playbook playbooks/site.yml
 
-# Full setup
-ansible-playbook playbooks/site.yml --ask-become-pass
+# Or target specific servers
+ansible-playbook playbooks/site.yml --limit longshot
 ```
+
+Note: Passwords are automatically retrieved from 1Password - no need for `--ask-become-pass`!
 
 ## What It Does
 
