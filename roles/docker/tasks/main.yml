@@ -1,0 +1,47 @@
+---
+- name: Update package cache
+  apt:
+    update_cache: yes
+  tags: [docker, install]
+
+- name: Install Docker packages from Debian repository
+  apt:
+    name:
+      - docker.io
+      - docker-cli
+      - docker-doc
+    state: present
+  tags: [docker, install]
+
+- name: Install Docker Compose
+  apt:
+    name: docker-compose
+    state: present
+  ignore_errors: true
+  tags: [docker, install]
+
+- name: Start and enable Docker service
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+  tags: [docker, service]
+
+- name: Add user to docker group
+  user:
+    name: "{{ server_user }}"
+    groups: docker
+    append: yes
+  when: server_user != "root"
+  tags: [docker, user, config]
+
+- name: Verify Docker installation
+  command: docker --version
+  register: docker_version
+  changed_when: false
+  tags: [docker, verify]
+
+- name: Display Docker version
+  debug:
+    msg: "Docker installed: {{ docker_version.stdout }}"
+  tags: [docker, verify]

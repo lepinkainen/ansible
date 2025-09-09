@@ -108,17 +108,25 @@ Note: Passwords are automatically retrieved from 1Password - no need for `--ask-
 - Sets up automated security updates with email notifications
 - Configures mail delivery via SSMTP
 
-## Optional: Docker Setup
+## Docker Setup
 
-Docker is not installed by default. If you need Docker on specific servers, add to that server's host_vars:
+Docker can be installed on servers using the dedicated Docker playbook:
 
-```yaml
-# inventory/host_vars/hostname/config.yml
-user_groups:
-  - sudo
-  - docker
-install_docker: true  # Future enhancement - will install Docker automatically
+```bash
+# Install Docker on all servers
+ansible-playbook playbooks/docker.yml
+
+# Install Docker on specific servers
+ansible-playbook playbooks/docker.yml --limit hostname
 ```
+
+The Docker playbook will:
+- Install Docker CE from Debian repositories
+- Install Docker Compose
+- Add the deploy user to the docker group
+- Start and enable the Docker service
+
+**Note**: After installation, users must log out and log back in for docker group membership to take effect.
 
 ## Customization
 
