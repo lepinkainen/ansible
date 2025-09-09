@@ -7,10 +7,10 @@ root=postmaster
 
 # The place where the mail goes. The actual machine name is required no
 # MX records are consulted. Commonly mailhosts are named mail.domain.com
-mailhub={{ mail_config.smtp_host }}
+mailhub=localhost:8025
 
-UseTLS={{ mail_config.use_tls | ternary('YES', 'NO') }}
-UseSTARTTLS={{ mail_config.use_starttls | ternary('YES', 'NO') }}
+UseTLS=NO
+UseSTARTTLS=NO
 
 # Where will the mail seem to come from?
 #rewriteDomain=
@@ -21,5 +21,5 @@ hostname={{ inventory_hostname }}
 # Are users allowed to set their own From: address?
 # YES - Allow the user to specify their own From: address
 # NO - Use the system generated From: address
-FromLineOverride={{ mail_config.from_line_override | ternary('YES', 'NO') }}
+FromLineOverride=YES
 FromLineSender=YES

@@ -28,9 +28,8 @@ user_groups:
   - sudo
 
 # Mail Configuration (non-sensitive)
+# ssmtp configured to use localhost:8025 for mailrise integration
 mail_config:
-  use_tls: false
-  use_starttls: false
   from_line_override: true
 
 # Unattended Upgrades Configuration (non-sensitive)
