@@ -16,7 +16,6 @@
     src: 50unattended-upgrades.j2
     dest: /etc/apt/apt.conf.d/50unattended-upgrades
     backup: yes
-  notify: restart unattended-upgrades
   tags: [upgrades, security, config]
 
 - name: Configure auto upgrades
@@ -24,12 +23,5 @@
     src: 20auto-upgrades.j2
     dest: /etc/apt/apt.conf.d/20auto-upgrades
     backup: yes
-  notify: restart unattended-upgrades
   tags: [upgrades, security, config]
 
-- name: Enable and start unattended-upgrades service
-  systemd:
-    name: unattended-upgrades
-    enabled: yes
-    state: started
-  tags: [upgrades, security, service]

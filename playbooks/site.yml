@@ -14,11 +14,10 @@
   post_tasks:
     - name: Display setup completion message
       debug:
-        msg: |
-          Server setup completed successfully!
-
-          Next steps:
-          1. Configure your hostname if needed: hostnamectl set-hostname <hostname>
-          2. Apply Chezmoi setup for user-level configurations
-          3. Verify mail configuration is working
-          4. Test unattended upgrades functionality
+        msg:
+          - "Server setup completed successfully!"
+          - ""
+          - "Next steps:"
+          - "1. Apply Chezmoi setup for user-level configurations"
+          - "2. Verify mail configuration is working"  
+          - "3. Test unattended upgrades functionality"
