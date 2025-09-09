@@ -32,6 +32,10 @@ user_groups:
 mail_config:
   from_line_override: true
 
+# Mailrise Configuration (non-sensitive)
+mailrise_config:
+  port: 8025
+
 # Unattended Upgrades Configuration (non-sensitive)
 unattended_upgrades:
   automatic_reboot: true

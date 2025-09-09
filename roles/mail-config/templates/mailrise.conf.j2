@@ -1,0 +1,8 @@
+configs:
+  discord:
+    urls:
+      - {{ vault_discord_url }}
+
+  "*@{{ inventory_hostname }}":
+    urls:
+      - {{ vault_discord_url }}

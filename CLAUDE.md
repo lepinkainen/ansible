@@ -74,6 +74,7 @@ ansible-vault edit inventory/host_vars/hostname/vault.yml
 - `vault_target_user`: Deployment user (usually "deploy")  
 - `vault_smtp_host`: SMTP server with port
 - `vault_notification_email`: Admin email address
+- `vault_discord_url`: Discord webhook URL for mailrise notifications (host-specific in host_vars/)
 
 ### Non-Sensitive (Plain text in config.yml)
 
@@ -103,8 +104,10 @@ ansible-vault edit inventory/host_vars/hostname/vault.yml
 
 ### mail-config
 
-- Fixes Debian's apt-listchanges to use SSMTP instead of direct sendmail
-- Template configures authentication and TLS based on vault variables
+- Installs and configures ssmtp to send mail to localhost:8025
+- Installs and configures mailrise systemd service for Discord notifications
+- Configures apt-listchanges to use ssmtp for package change notifications
+- Uses host-specific Discord webhook URLs from vault variables
 
 ## Development Workflow
 
@@ -112,7 +115,7 @@ ansible-vault edit inventory/host_vars/hostname/vault.yml
 
 1. **Manual setup**: Create `deploy` user with sudo access (see README.md)
 2. **Inventory**: Add to encrypted `inventory/production.yml`
-3. **Host vars**: Create `host_vars/hostname/vault.yml` with `vault_hostname`
+3. **Host vars**: Create `host_vars/hostname/vault.yml` with `vault_hostname` and `vault_discord_url`
 4. **Test**: `ansible hostname -m ping`
 5. **Deploy**: `ansible-playbook playbooks/site.yml --limit hostname --check`
 

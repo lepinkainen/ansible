@@ -67,7 +67,7 @@ Required vault variables:
 
 - `vault_hostname`: Your desired server hostname (host-specific in host_vars/)
 - `vault_target_user`: The user account to manage (usually `deploy`)
-- `vault_smtp_host`: SMTP server (or localhost:8025 for testing)
+- `vault_discord_url`: Discord webhook URL for mailrise notifications (host-specific in host_vars/)
 - `vault_notification_email`: Your email address
 
 ### 4. Configure Inventory
@@ -106,7 +106,7 @@ Note: Passwords are automatically retrieved from 1Password - no need for `--ask-
 - Installs essential packages (fish, tmux, htop, curl, etc.)
 - Configures user with fish shell and sudo group
 - Sets up automated security updates with email notifications
-- Configures mail delivery via SSMTP
+- Configures mail delivery via ssmtp + mailrise for Discord notifications
 
 ## Docker Setup
 

@@ -1,0 +1,16 @@
+[Unit]
+Description=Mailrise SMTP notification relay
+After=network.target
+
+[Service]
+Type=simple
+User=mailrise
+Group=mailrise
+ExecStart=/usr/local/bin/mailrise /etc/mailrise.conf
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

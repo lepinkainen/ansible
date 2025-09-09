@@ -1,8 +1,25 @@
 ---
-- name: Install ssmtp
+- name: Install ssmtp and python3-pip
   apt:
-    name: ssmtp
+    name:
+      - ssmtp
+      - python3-pip
     state: present
+  tags: [mail, security, install]
+
+- name: Install mailrise via pip
+  pip:
+    name: mailrise
+    state: present
+  tags: [mail, security, install]
+
+- name: Create mailrise user
+  user:
+    name: mailrise
+    system: yes
+    shell: /bin/false
+    home: /nonexistent
+    create_home: no
   tags: [mail, security, install]
 
 - name: Configure ssmtp
@@ -35,4 +52,35 @@
     regexp: '^#?which='
     line: 'which=both'
     backup: yes
+  tags: [mail, security, config]
+
+- name: Configure mailrise
+  template:
+    src: mailrise.conf.j2
+    dest: /etc/mailrise.conf
+    backup: yes
+    mode: '0644'
+    owner: root
+    group: root
+  notify: restart mailrise
+  tags: [mail, security, config]
+
+- name: Install mailrise systemd service
+  template:
+    src: mailrise.service.j2
+    dest: /etc/systemd/system/mailrise.service
+    mode: '0644'
+    owner: root
+    group: root
+  notify:
+    - reload systemd
+    - restart mailrise
+  tags: [mail, security, config]
+
+- name: Start and enable mailrise service
+  systemd:
+    name: mailrise
+    state: started
+    enabled: yes
+    daemon_reload: yes
   tags: [mail, security, config]
