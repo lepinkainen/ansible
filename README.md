@@ -74,14 +74,16 @@ Required vault variables:
 
 ```bash
 # Edit the encrypted inventory file
-ansible-vault edit inventory/production
+ansible-vault edit inventory/production.yml
 ```
 
 Add your servers:
 
-```ini
-[debian_servers]
-localhost ansible_connection=local
+```yaml
+debian_servers:
+  hosts:
+    localhost:
+      ansible_connection: local
 ```
 
 The inventory file is encrypted with Ansible Vault for security.
@@ -122,7 +124,7 @@ For sensitive changes, use:
 ansible-vault edit inventory/group_vars/debian_servers/vault.yml
 
 # Edit inventory
-ansible-vault edit inventory/production
+ansible-vault edit inventory/production.yml
 ```
 
 ## Documentation
