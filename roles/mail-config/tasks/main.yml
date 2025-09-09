@@ -1,17 +1,53 @@
 ---
-- name: Install ssmtp and python3-pip
+- name: Install ssmtp
   apt:
     name:
       - ssmtp
-      - python3-pip
     state: present
   tags: [mail, security, install]
 
-- name: Install mailrise via pip
-  pip:
-    name: mailrise
-    state: present
+- name: Check if Docker is installed and running
+  command: docker info
+  register: docker_check
+  failed_when: false
+  changed_when: false
   tags: [mail, security, install]
+
+- name: Notify if Docker is not available
+  debug:
+    msg: "Docker is not installed or not running. Mailrise will be skipped. Install Docker to use mailrise for Discord notifications."
+  when: docker_check.rc != 0
+  tags: [mail, security, install]
+
+- name: Create mailrise directory
+  file:
+    path: /opt/mailrise
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+  when: docker_check.rc == 0
+  tags: [mail, security, install]
+
+- name: Deploy mailrise docker-compose.yml
+  copy:
+    content: |
+      services:
+        mailrise:
+          container_name: mailrise
+          image: yoryan/mailrise
+          volumes:
+            - ./mailrise.conf:/etc/mailrise.conf:ro
+          ports:
+            - "8025:8025"
+          restart: unless-stopped
+    dest: /opt/mailrise/docker-compose.yml
+    mode: '0644'
+    owner: root
+    group: root
+  when: docker_check.rc == 0
+  notify: restart mailrise
+  tags: [mail, security, config]
 
 - name: Create mailrise user
   user:
@@ -20,6 +56,7 @@
     shell: /bin/false
     home: /nonexistent
     create_home: no
+  when: docker_check.rc == 0
   tags: [mail, security, install]
 
 - name: Configure ssmtp
@@ -57,30 +94,18 @@
 - name: Configure mailrise
   template:
     src: mailrise.conf.j2
-    dest: /etc/mailrise.conf
+    dest: /opt/mailrise/mailrise.conf
     backup: yes
     mode: '0644'
     owner: root
     group: root
+  when: docker_check.rc == 0
   notify: restart mailrise
   tags: [mail, security, config]
 
-- name: Install mailrise systemd service
-  template:
-    src: mailrise.service.j2
-    dest: /etc/systemd/system/mailrise.service
-    mode: '0644'
-    owner: root
-    group: root
-  notify:
-    - reload systemd
-    - restart mailrise
-  tags: [mail, security, config]
-
-- name: Start and enable mailrise service
-  systemd:
-    name: mailrise
-    state: started
-    enabled: yes
-    daemon_reload: yes
+- name: Start mailrise container
+  command: docker compose up -d
+  args:
+    chdir: /opt/mailrise
+  when: docker_check.rc == 0
   tags: [mail, security, config]

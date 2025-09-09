@@ -1,9 +1,5 @@
 ---
-- name: reload systemd
-  systemd:
-    daemon_reload: yes
-
 - name: restart mailrise
-  systemd:
-    name: mailrise
-    state: restarted
+  command: docker compose restart
+  args:
+    chdir: /opt/mailrise
