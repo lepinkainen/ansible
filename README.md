@@ -37,6 +37,7 @@ ansible-vault edit inventory/group_vars/debian_servers/vault.yml
 ```
 
 Required vault variables:
+
 - `vault_hostname`: Your desired server hostname
 - `vault_target_user`: Your username (current user)
 - `vault_smtp_host`: SMTP server (or localhost:8025 for testing)
@@ -50,6 +51,7 @@ cp inventory/production.example inventory/production
 ```
 
 Edit `inventory/production` and replace with:
+
 ```ini
 [debian_servers]
 localhost ansible_connection=local
@@ -76,12 +78,14 @@ ansible-playbook playbooks/site.yml --ask-become-pass
 ## Customization
 
 Edit `inventory/group_vars/debian_servers/config.yml` to customize:
+
 - Timezone and locales
 - Package list
 - User shell and groups
 - Update timing
 
 For sensitive changes, use:
+
 ```bash
 ansible-vault edit inventory/group_vars/debian_servers/vault.yml
 ```
