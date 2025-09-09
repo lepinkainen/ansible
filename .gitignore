@@ -3,10 +3,6 @@
 .env.local
 .env.production
 
-# Actual inventory files (keep templates only)
-inventory/production
-inventory/staging
-inventory/local
 
 # Ansible Vault files
 vault.yml

@@ -1,6 +1,0 @@
-[debian_servers]
-# Add your Debian 13 server hostname or IP here
-# Examples:
-# production-server ansible_host=192.168.1.100 ansible_user=deploy
-# staging-server ansible_host=192.168.1.101 ansible_user=deploy
-# localhost ansible_connection=local

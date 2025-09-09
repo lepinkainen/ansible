@@ -4,7 +4,9 @@ Quick setup guide for running the playbook on a clean Debian installation.
 
 ## Prerequisites
 
-Fresh Debian 13 installation with sudo access.
+- Fresh Debian 13 installation with sudo access
+- 1Password CLI installed and authenticated
+- Vault password stored in 1Password at `Development/Ansible Vault`
 
 ## Setup Steps
 
@@ -22,14 +24,17 @@ git clone https://github.com/lepinkainen/ansible.git
 cd ansible
 ```
 
-### 3. Configure Vault
+### 3. Setup 1Password CLI
 
 ```bash
-# Set vault password (change this!)
-echo "your_secure_password" > ~/.ansible_vault_pass
-chmod 600 ~/.ansible_vault_pass
+# Install 1Password CLI (macOS)
+brew install --cask 1password-cli
 
-# Create vault from template
+# Authenticate
+op signin
+
+# Store your vault password in 1Password at: Development/Ansible Vault
+# Then create vault from template
 cp inventory/group_vars/debian_servers/vault.yml.example inventory/group_vars/debian_servers/vault.yml
 
 # Edit vault with your settings
@@ -46,16 +51,18 @@ Required vault variables:
 ### 4. Configure Inventory
 
 ```bash
-# Create inventory
-cp inventory/production.example inventory/production
+# Edit the encrypted inventory file
+ansible-vault edit inventory/production
 ```
 
-Edit `inventory/production` and replace with:
+Add your servers:
 
 ```ini
 [debian_servers]
 localhost ansible_connection=local
 ```
+
+The inventory file is encrypted with Ansible Vault for security.
 
 ### 5. Run Playbook
 
@@ -87,7 +94,11 @@ Edit `inventory/group_vars/debian_servers/config.yml` to customize:
 For sensitive changes, use:
 
 ```bash
+# Edit vault variables
 ansible-vault edit inventory/group_vars/debian_servers/vault.yml
+
+# Edit inventory
+ansible-vault edit inventory/production
 ```
 
 ## Documentation
