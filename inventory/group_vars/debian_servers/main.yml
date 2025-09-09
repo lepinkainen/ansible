@@ -4,6 +4,7 @@
 # System Configuration (sensitive)
 hostname: "{{ vault_hostname }}"
 server_user: "{{ vault_target_user }}"
+deploy_user: "{{ vault_deploy_user }}"
 
 # Mail Configuration (mixed sensitive/non-sensitive)
 mail_config:

@@ -1,13 +1,33 @@
 ---
-- name: Ensure user exists
+# Deploy user setup - minimal for deployment only
+- name: Ensure deploy user exists
+  user:
+    name: "{{ deploy_user }}"
+    shell: /bin/bash
+    state: present
+    create_home: yes
+  when: deploy_user != "root"
+  tags: [user-management, deploy-user, config]
+
+- name: Add deploy user to sudo group
+  user:
+    name: "{{ deploy_user }}"
+    groups: sudo
+    append: yes
+  when: deploy_user != "root"
+  tags: [user-management, deploy-user, config]
+
+# Actual user setup - full environment
+- name: Ensure actual user exists
   user:
     name: "{{ server_user }}"
     shell: "{{ user_shell }}"
     state: present
+    create_home: yes
   when: server_user != "root"
   tags: [user-management, user, config]
 
-- name: Add user to groups
+- name: Add actual user to groups
   user:
     name: "{{ server_user }}"
     groups: "{{ user_groups }}"
@@ -15,18 +35,10 @@
   when: server_user != "root"
   tags: [user-management, user, config]
 
-- name: Change shell for existing user
-  user:
-    name: "{{ server_user }}"
-    shell: "{{ user_shell }}"
-  when: server_user != "root"
-  tags: [user-management, user, config]
-
 - name: Install fisher for fish shell
-  become_user: "{{ server_user }}"
   shell: |
-    curl -sL https://git.io/fisher | fish -c 'source; and fisher install jorgebucaran/fisher'
+    sudo -u "{{ server_user }}" -H bash -c 'curl -sL https://git.io/fisher | fish -c "source; and fisher install jorgebucaran/fisher"'
   args:
-    creates: ~/.config/fish/functions/fisher.fish
-  when: user_shell == "/usr/bin/fish"
+    creates: "/home/{{ server_user }}/.config/fish/functions/fisher.fish"
+  when: user_shell == "/usr/bin/fish" and server_user != "root"
   tags: [user-management, user, install]
