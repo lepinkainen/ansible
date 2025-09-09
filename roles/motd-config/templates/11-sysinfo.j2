@@ -1,0 +1,19 @@
+#!/bin/sh
+#
+# 11-sysinfo - additional system information
+#
+
+date=`date`
+load=`cat /proc/loadavg | awk '{print $1}'`
+memory_usage=`free | awk 'FNR==2{printf "%.1f", $3/($2)*100 }'`
+swap_usage=`free | awk 'FNR==3{if ($2 > 0) printf "%.1f", $3/$2*100; else print "0"}'`
+users=`users | wc -w`
+time=`uptime | grep -ohe 'up .*' | sed 's/,.*users.*//' | awk '{$1=$1;print}'`
+
+echo "=== System Information ==="
+printf "  System load:    %s\n" "$load"
+printf "  Memory usage:   %s%%\n" "$memory_usage"
+printf "  Swap usage:     %s%%\n" "$swap_usage"
+printf "  Users online:   %s\n" "$users"
+printf "  Uptime:         %s\n" "$time"
+echo

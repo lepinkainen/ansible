@@ -38,3 +38,13 @@ mail_config:
 unattended_upgrades:
   automatic_reboot: true
   automatic_reboot_time: "02:00"
+
+# MOTD Configuration (non-sensitive)
+motd_config:
+  enable_welcome: true
+  enable_sysinfo: true
+  enable_security_updates: true
+  enable_footer: true
+  check_security_updates: true
+  welcome_message: ""  # Additional welcome message (optional)
+  footer_message: ""   # Custom footer message (optional)

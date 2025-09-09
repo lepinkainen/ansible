@@ -22,6 +22,7 @@ ansible/
 ├── roles/                         # Role-based organization
 │   ├── system-basics/             # Hostname, locale, timezone
 │   ├── packages/                  # Core packages and tools
+│   ├── motd-config/               # Message of the Day configuration
 │   ├── user-management/           # User setup and shell config
 │   ├── mail-config/               # SSMTP configuration
 │   └── unattended-upgrades/       # Security update automation
@@ -121,6 +122,13 @@ set -a; source .env; set +a
 | `mail_config.use_starttls` | false | Use STARTTLS for SMTP |
 | `unattended_upgrades.automatic_reboot` | true | Allow automatic reboots |
 | `unattended_upgrades.automatic_reboot_time` | 02:00 | Scheduled reboot time |
+| `motd_config.enable_welcome` | true | Enable MOTD welcome message |
+| `motd_config.enable_sysinfo` | true | Enable system information display |
+| `motd_config.enable_security_updates` | true | Enable security update notifications |
+| `motd_config.enable_footer` | true | Enable MOTD footer |
+| `motd_config.check_security_updates` | true | Check for security updates |
+| `motd_config.welcome_message` | "" | Additional welcome message (optional) |
+| `motd_config.footer_message` | "" | Custom footer message (optional) |
 
 ### Vault Management
 
@@ -218,6 +226,14 @@ For development environments using `.env`:
 - Installs core packages from `core_packages` config (packages/tasks/main.yml:2-5)
 - Detects ARM architecture to skip Starship (packages/tasks/main.yml:7-9)
 - Installs Starship prompt on x86_64 systems (packages/tasks/main.yml:11-17)
+
+### motd-config
+
+- Removes default `/etc/motd` to prevent conflicts (motd-config/tasks/main.yml:2-5)
+- Preserves existing custom MOTD scripts (01-logo, 10-uname, 15-diskspace, 20-docker, 92-unattended-upgrades)
+- Deploys complementary MOTD scripts with proper naming conventions (motd-config/tasks/main.yml:8-42)
+- Scripts: 05-welcome (hostname welcome), 11-sysinfo (load/memory/users), 30-security-updates (security alerts), 95-footer (management info)
+- Uses `motd_config` variables for customization and conditional deployment
 
 ### user-management
 

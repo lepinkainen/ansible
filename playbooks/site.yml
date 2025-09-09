@@ -6,6 +6,7 @@
   roles:
     - system-basics
     - packages
+    - motd-config
     - user-management
     - mail-config
     - unattended-upgrades

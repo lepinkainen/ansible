@@ -1,0 +1,11 @@
+#!/bin/sh
+#
+# 95-footer - footer information
+#
+
+{% if motd_config.footer_message is defined and motd_config.footer_message %}
+printf "%s\n" "{{ motd_config.footer_message }}"
+{% else %}
+printf "Server managed by Ansible\n"
+{% endif %}
+printf "\n"
