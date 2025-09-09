@@ -45,7 +45,3 @@
   when: motd_config.enable_footer | default(true)
   tags: [motd, config]
 
-- name: Update MOTD
-  command: update-motd
-  changed_when: false
-  tags: [motd, system]
