@@ -5,6 +5,7 @@
     shell: "{{ user_shell }}"
     state: present
   when: server_user != "root"
+  tags: [user-management, user, config]
 
 - name: Add user to groups
   user:
@@ -12,12 +13,14 @@
     groups: "{{ user_groups }}"
     append: yes
   when: server_user != "root"
+  tags: [user-management, user, config]
 
 - name: Change shell for existing user
   user:
     name: "{{ server_user }}"
     shell: "{{ user_shell }}"
   when: server_user != "root"
+  tags: [user-management, user, config]
 
 - name: Install fisher for fish shell
   become_user: "{{ server_user }}"
@@ -26,3 +29,4 @@
   args:
     creates: ~/.config/fish/functions/fisher.fish
   when: user_shell == "/usr/bin/fish"
+  tags: [user-management, user, install]

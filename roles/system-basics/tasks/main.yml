@@ -3,6 +3,7 @@
   hostname:
     name: "{{ hostname }}"
   when: hostname != ansible_hostname
+  tags: [system-basics, system, config]
 
 - name: Add hostname to /etc/hosts
   lineinfile:
@@ -10,16 +11,19 @@
     regexp: '^127\.0\.1\.1'
     line: "127.0.1.1 {{ hostname }}"
     backup: yes
+  tags: [system-basics, system, config]
 
 - name: Generate locales
   locale_gen:
     name: "{{ item }}"
     state: present
   loop: "{{ locales }}"
+  tags: [system-basics, system, config]
 
 - name: Set timezone
   timezone:
     name: "{{ timezone }}"
+  tags: [system-basics, system, config]
 
 - name: Configure timezone file
   copy:
@@ -27,8 +31,10 @@
     dest: /etc/timezone
     backup: yes
   notify: reconfigure tzdata
+  tags: [system-basics, system, config]
 
 - name: Update apt cache
   apt:
     update_cache: yes
     cache_valid_time: 3600
+  tags: [system-basics, system]

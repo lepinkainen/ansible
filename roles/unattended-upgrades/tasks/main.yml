@@ -3,11 +3,13 @@
   apt:
     update_cache: yes
     cache_valid_time: 3600
+  tags: [upgrades, security]
 
 - name: Install unattended-upgrades package
   apt:
     name: unattended-upgrades
     state: present
+  tags: [upgrades, security, install]
 
 - name: Configure unattended-upgrades
   template:
@@ -15,6 +17,7 @@
     dest: /etc/apt/apt.conf.d/50unattended-upgrades
     backup: yes
   notify: restart unattended-upgrades
+  tags: [upgrades, security, config]
 
 - name: Configure auto upgrades
   template:
@@ -22,9 +25,11 @@
     dest: /etc/apt/apt.conf.d/20auto-upgrades
     backup: yes
   notify: restart unattended-upgrades
+  tags: [upgrades, security, config]
 
 - name: Enable and start unattended-upgrades service
   systemd:
     name: unattended-upgrades
     enabled: yes
     state: started
+  tags: [upgrades, security, service]

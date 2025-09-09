@@ -3,6 +3,7 @@
   apt:
     name: ssmtp
     state: present
+  tags: [mail, security, install]
 
 - name: Configure ssmtp
   template:
@@ -10,6 +11,7 @@
     dest: /etc/ssmtp/ssmtp.conf
     backup: yes
     mode: '0644'
+  tags: [mail, security, config]
 
 - name: Configure apt-listchanges to use ssmtp
   lineinfile:
@@ -17,6 +19,7 @@
     regexp: '^#?frontend='
     line: 'frontend=mail'
     backup: yes
+  tags: [mail, security, config]
 
 - name: Set apt-listchanges email method to use sendmail (ssmtp)
   lineinfile:
@@ -24,6 +27,7 @@
     regexp: '^#?email_address='
     line: 'email_address=root'
     backup: yes
+  tags: [mail, security, config]
 
 - name: Ensure apt-listchanges uses the correct mail command
   lineinfile:
@@ -31,3 +35,4 @@
     regexp: '^#?which='
     line: 'which=both'
     backup: yes
+  tags: [mail, security, config]

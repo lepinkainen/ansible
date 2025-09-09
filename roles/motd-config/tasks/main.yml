@@ -3,7 +3,7 @@
   file:
     path: /etc/motd
     state: absent
-    backup: yes
+  tags: [motd, config]
 
 - name: Deploy MOTD welcome script (replaces generic header)
   template:
@@ -13,6 +13,7 @@
     owner: root
     group: root
   when: motd_config.enable_welcome | default(true)
+  tags: [motd, config]
 
 - name: Deploy MOTD system info script (complements existing uname)
   template:
@@ -22,6 +23,7 @@
     owner: root
     group: root
   when: motd_config.enable_sysinfo | default(true)
+  tags: [motd, config]
 
 - name: Deploy MOTD security updates script
   template:
@@ -31,6 +33,7 @@
     owner: root
     group: root
   when: motd_config.enable_security_updates | default(true)
+  tags: [motd, config]
 
 - name: Deploy MOTD footer script
   template:
@@ -40,7 +43,9 @@
     owner: root
     group: root
   when: motd_config.enable_footer | default(true)
+  tags: [motd, config]
 
 - name: Update MOTD
   command: update-motd
   changed_when: false
+  tags: [motd, system]
