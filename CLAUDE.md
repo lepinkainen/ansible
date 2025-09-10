@@ -93,8 +93,7 @@ ansible-vault edit inventory/host_vars/hostname/vault.yml
 
 ### packages  
 
-- Detects ARM64 to skip x86_64-only Starship prompt (packages/tasks/main.yml:7-17)
-- Uses conditional installation based on architecture detection
+- Installs core packages including starship prompt via apt package manager
 
 ### motd-config
 
@@ -155,7 +154,6 @@ This project follows the `llm-shared` guidelines:
 2. **Inventory format**: Uses YAML (`production.yml`), not INI
 3. **Password automation**: No `--ask-become-pass` needed with 1Password
 4. **Encryption requirement**: ALL sensitive files must be vault-encrypted
-5. **Architecture detection**: ARM64 servers skip certain x86_64 packages
 6. **MOTD script ordering**: Complement existing numbered scripts, don't replace
 
 - Use `scripts/encrypt-vault-files.sh` to encrypt all vault files

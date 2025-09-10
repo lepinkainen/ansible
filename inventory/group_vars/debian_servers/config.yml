@@ -19,9 +19,7 @@ core_packages:
   - unattended-upgrades
   - ssmtp
   - figlet
-
-# Install starship on non-ARM systems
-install_starship: true
+  - starship
 
 # User Configuration
 user_shell: "/usr/bin/fish"
