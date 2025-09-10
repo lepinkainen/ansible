@@ -6,6 +6,8 @@ This Ansible project automates Debian 13 server provisioning with a security-fir
 
 **Key Design Decision**: No bootstrap playbook - deploy user setup is done manually as documented in README.md. This ensures proper SSH key setup and sudo access before Ansible runs.
 
+**Current Roles**: system-basics, packages, user-management, motd-config, mail-config, unattended-upgrades, docker
+
 ## Critical Architecture Details
 
 ### 1Password Integration (Key Differentiator)
@@ -83,6 +85,8 @@ ansible-vault edit inventory/host_vars/hostname/vault.yml
 - `user_shell`: Default shell (/usr/bin/fish)
 - `motd_config.*`: MOTD customization options
 - `unattended_upgrades.*`: Update timing and behavior
+- `disk_usage_locations`: Array of mount points to monitor (default: ['/'])
+- `mail_config.enable_mailrise`: Boolean to control mailrise service (host-specific override)
 
 ## Role-Specific Implementation Notes
 
@@ -97,11 +101,12 @@ ansible-vault edit inventory/host_vars/hostname/vault.yml
 
 ### motd-config
 
-- **Ansible-managed MOTD scripts**: Deploys numbered scripts to complement system defaults
+- **Ansible-managed MOTD scripts**: Deploys numbered scripts to complement system defaults (removes /etc/motd first)
 - **Script sequence**: 01-logo → 10-uname → 15-diskspace → 20-docker → 30-security-updates → 92-unattended-upgrades
-- **Conditional deployment**: Uses `motd_config.enable_*` flags for each script component
+- **Conditional deployment**: Uses `motd_config.enable_*` flags for each script component (default: true)
 - **Static files**: 01-logo, 10-uname, 20-docker, 30-security-updates, 92-unattended-upgrades
-- **Templates**: 15-diskspace.j2 (uses `disk_usage_locations` variable)
+- **Templates**: 15-diskspace.j2 (uses `disk_usage_locations` variable, supports color-coded usage thresholds)
+- **File locations**: roles/motd-config/files/ and roles/motd-config/templates/
 
 ### mail-config
 
@@ -117,8 +122,9 @@ ansible-vault edit inventory/host_vars/hostname/vault.yml
 1. **Manual setup**: Create `deploy` user with sudo access (see README.md)
 2. **Inventory**: Add to encrypted `inventory/production.yml`
 3. **Host vars**: Create `host_vars/hostname/vault.yml` with `vault_hostname` and `vault_discord_url`
-4. **Test**: `ansible hostname -m ping`
-5. **Deploy**: `ansible-playbook playbooks/site.yml --limit hostname --check`
+4. **Optional config**: Create `host_vars/hostname/config.yml` for host-specific non-sensitive config (e.g., `disk_usage_locations`, `mail_config.enable_mailrise`)
+5. **Test**: `ansible hostname -m ping`
+6. **Deploy**: `ansible-playbook playbooks/site.yml --limit hostname --check`
 
 ### Security Requirements
 
@@ -154,7 +160,25 @@ This project follows the `llm-shared` guidelines:
 2. **Inventory format**: Uses YAML (`production.yml`), not INI
 3. **Password automation**: No `--ask-become-pass` needed with 1Password
 4. **Encryption requirement**: ALL sensitive files must be vault-encrypted
-6. **MOTD script ordering**: Complement existing numbered scripts, don't replace
+5. **MOTD script ordering**: Complement existing numbered scripts, don't replace
+6. **Host-specific configs**: Both vault.yml (encrypted) and config.yml (plain) can exist in host_vars/
+7. **Docker group membership**: Users must log out/in after docker role runs for group changes to take effect
 
-- Use `scripts/encrypt-vault-files.sh` to encrypt all vault files
-- When working with vault files, decrypt them first
+## Quick Reference
+
+### Essential File Patterns
+
+- `inventory/production.yml` - ENCRYPTED inventory (YAML format)  
+- `inventory/group_vars/debian_servers/vault.yml` - ENCRYPTED group secrets
+- `inventory/group_vars/debian_servers/config.yml` - Plain group config
+- `inventory/host_vars/hostname/vault.yml` - ENCRYPTED host secrets
+- `inventory/host_vars/hostname/config.yml` - Plain host config (optional)
+- `roles/*/tasks/main.yml` - Role task definitions
+- `roles/motd-config/files/` - Static MOTD scripts  
+- `roles/motd-config/templates/` - Jinja2 MOTD templates
+
+### Encryption Workflow
+
+- **Before editing**: Files auto-decrypt via ansible.cfg password scripts
+- **After changes**: Run `./scripts/encrypt-vault-files.sh` to bulk encrypt
+- **Check status**: `./scripts/encrypt-vault-files.sh --dry-run`
