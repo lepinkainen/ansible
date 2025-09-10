@@ -98,9 +98,11 @@ ansible-vault edit inventory/host_vars/hostname/vault.yml
 
 ### motd-config
 
-- **Naming convention**: Scripts numbered 05, 11, 30, 95 to complement existing system scripts
-- **Preserves existing**: Does not overwrite 01-logo, 10-uname, 15-diskspace, 20-docker, 92-unattended-upgrades
-- **Conditional deployment**: Uses `motd_config.enable_*` flags
+- **Ansible-managed MOTD scripts**: Deploys numbered scripts to complement system defaults
+- **Script sequence**: 01-logo → 10-uname → 15-diskspace → 20-docker → 30-security-updates → 92-unattended-upgrades
+- **Conditional deployment**: Uses `motd_config.enable_*` flags for each script component
+- **Static files**: 01-logo, 10-uname, 20-docker, 30-security-updates, 92-unattended-upgrades
+- **Templates**: 15-diskspace.j2 (uses `disk_usage_locations` variable)
 
 ### mail-config
 

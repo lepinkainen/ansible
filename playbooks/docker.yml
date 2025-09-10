@@ -9,13 +9,13 @@
   post_tasks:
     - name: Display Docker setup completion message
       debug:
-        msg: |
-          Docker setup completed successfully!
-
-          Next steps:
-          1. Log out and log back in for group changes to take effect
-          2. Test Docker access: docker run hello-world
-          3. Consider setting up Docker Compose for multi-container applications
+        msg:
+          - "Docker setup completed successfully!"
+          - ""
+          - "Next steps:"
+          - "1. Log out and log back in for group changes to take effect"
+          - "2. Test Docker access: docker run hello-world"
+          - "3. Consider setting up Docker Compose for multi-container applications"
 
     - name: Remind about group membership
       debug:

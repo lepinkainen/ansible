@@ -1,0 +1,8 @@
+---
+# Host-specific configuration for endymion
+
+# Custom disk usage locations for this server
+# Override the default (just "/") to monitor multiple mount points
+disk_usage_locations:
+  - "/"
+  - "/home"

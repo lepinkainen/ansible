@@ -5,43 +5,63 @@
     state: absent
   tags: [motd, config]
 
-- name: Deploy MOTD welcome script (replaces generic header)
-  template:
-    src: 05-welcome.j2
-    dest: /etc/update-motd.d/05-welcome
-    mode: '0755'
+- name: Deploy MOTD logo script
+  copy:
+    src: 01-logo
+    dest: /etc/update-motd.d/01-logo
+    mode: "0755"
     owner: root
     group: root
-  when: motd_config.enable_welcome | default(true)
+  when: motd_config.enable_logo | default(true)
   tags: [motd, config]
 
-- name: Deploy MOTD system info script (complements existing uname)
-  template:
-    src: 11-sysinfo.j2
-    dest: /etc/update-motd.d/11-sysinfo
-    mode: '0755'
+- name: Deploy MOTD uname script
+  copy:
+    src: 10-uname
+    dest: /etc/update-motd.d/10-uname
+    mode: "0755"
     owner: root
     group: root
-  when: motd_config.enable_sysinfo | default(true)
+  when: motd_config.enable_uname | default(true)
+  tags: [motd, config]
+
+- name: Deploy MOTD disk space script
+  template:
+    src: 15-diskspace.j2
+    dest: /etc/update-motd.d/15-diskspace
+    mode: "0755"
+    owner: root
+    group: root
+  when: motd_config.enable_diskspace | default(true)
+  tags: [motd, config]
+
+- name: Deploy MOTD docker health script
+  copy:
+    src: 20-docker
+    dest: /etc/update-motd.d/20-docker
+    mode: "0755"
+    owner: root
+    group: root
+  when: motd_config.enable_docker | default(true)
   tags: [motd, config]
 
 - name: Deploy MOTD security updates script
-  template:
-    src: 30-security-updates.j2
+  copy:
+    src: 30-security-updates
     dest: /etc/update-motd.d/30-security-updates
-    mode: '0755'
+    mode: "0755"
     owner: root
     group: root
   when: motd_config.enable_security_updates | default(true)
   tags: [motd, config]
 
-- name: Deploy MOTD footer script
-  template:
-    src: 95-footer.j2
-    dest: /etc/update-motd.d/95-footer
-    mode: '0755'
+- name: Deploy MOTD unattended upgrades script
+  copy:
+    src: 92-unattended-upgrades
+    dest: /etc/update-motd.d/92-unattended-upgrades
+    mode: "0755"
     owner: root
     group: root
-  when: motd_config.enable_footer | default(true)
+  when: motd_config.enable_unattended_upgrades | default(true)
   tags: [motd, config]
 

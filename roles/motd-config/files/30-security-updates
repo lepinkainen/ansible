@@ -1,0 +1,24 @@
+#!/bin/sh
+#
+# 30-security-updates - show security update status
+#
+
+# Check for security updates specifically
+codename=$(lsb_release -cs 2>/dev/null || echo "")
+if [ -n "$codename" ]; then
+    security_updates=$(apt list --upgradable 2>/dev/null | grep -c "${codename}-security" 2>/dev/null || echo "0")
+else
+    security_updates="0"
+fi
+
+# Ensure we have a valid number
+case "$security_updates" in
+    ''|*[!0-9]*) security_updates="0" ;;
+esac
+
+if [ "$security_updates" -gt 0 ]; then
+    echo "=== Security Updates ==="
+    printf "  ⚠ %d security updates available\n" "$security_updates"
+    echo "  Run 'apt upgrade' to install security updates"
+    echo
+fi
