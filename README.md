@@ -17,14 +17,14 @@ Create a dedicated `deploy` user for Ansible operations:
 apt update && apt install sudo
 
 # Create deploy user
-/usr/sbin/adduser deploy
-/usr/sbin/usermod -aG sudo deploy
+useradd -m -s /bin/bash -G sudo deploy
+passwd deploy
 
 # Set up SSH key for deploy user (from your local machine)
-ssh-copy-id deploy@192.168.1.139
+ssh-copy-id deploy@example.com
 
 # Test deploy user access (from your local machine)
-ssh deploy@192.168.1.139
+ssh deploy@example.com
 sudo whoami  # Should return 'root'
 ```
 
@@ -121,6 +121,7 @@ ansible-playbook playbooks/docker.yml --limit hostname
 ```
 
 The Docker playbook will:
+
 - Install Docker CE from Debian repositories
 - Install Docker Compose
 - Add the deploy user to the docker group
