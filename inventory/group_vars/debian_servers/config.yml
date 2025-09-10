@@ -31,10 +31,6 @@ user_groups:
 mail_config:
   from_line_override: true
 
-# Mailrise Configuration (non-sensitive)
-mailrise_config:
-  port: 8025
-
 # Unattended Upgrades Configuration (non-sensitive)
 unattended_upgrades:
   automatic_reboot: true
@@ -44,15 +40,10 @@ unattended_upgrades:
 motd_config:
   enable_logo: true
   enable_uname: true
-  enable_sysinfo: true
   enable_diskspace: true
   enable_docker: true
   enable_security_updates: true
   enable_unattended_upgrades: true
-  enable_footer: true
-  check_security_updates: true
-  welcome_message: "" # Additional welcome message (optional)
-  footer_message: "" # Custom footer message (optional)
 
 # Disk Usage Monitoring (non-sensitive)
 # Default locations for disk usage monitoring in MOTD
