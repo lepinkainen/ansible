@@ -11,12 +11,13 @@
   register: docker_check
   failed_when: false
   changed_when: false
+  when: mail_config.enable_mailrise | default(true)
   tags: [mail, security, install]
 
 - name: Notify if Docker is not available
   debug:
     msg: "Docker is not installed or not running. Mailrise will be skipped. Install Docker to use mailrise for Discord notifications."
-  when: docker_check.rc != 0
+  when: mail_config.enable_mailrise | default(true) and docker_check.rc != 0
   tags: [mail, security, install]
 
 - name: Create mailrise directory
@@ -26,7 +27,7 @@
     mode: '0755'
     owner: root
     group: root
-  when: docker_check.rc == 0
+  when: mail_config.enable_mailrise | default(true) and docker_check.rc == 0
   tags: [mail, security, install]
 
 - name: Deploy mailrise docker-compose.yml
@@ -45,7 +46,7 @@
     mode: '0644'
     owner: root
     group: root
-  when: docker_check.rc == 0
+  when: mail_config.enable_mailrise | default(true) and docker_check.rc == 0
   notify: restart mailrise
   tags: [mail, security, config]
 
@@ -56,7 +57,7 @@
     shell: /bin/false
     home: /nonexistent
     create_home: no
-  when: docker_check.rc == 0
+  when: mail_config.enable_mailrise | default(true) and docker_check.rc == 0
   tags: [mail, security, install]
 
 - name: Configure ssmtp
@@ -99,7 +100,7 @@
     mode: '0644'
     owner: root
     group: root
-  when: docker_check.rc == 0
+  when: mail_config.enable_mailrise | default(true) and docker_check.rc == 0
   notify: restart mailrise
   tags: [mail, security, config]
 
@@ -107,5 +108,5 @@
   command: docker compose up -d
   args:
     chdir: /opt/mailrise
-  when: docker_check.rc == 0
+  when: mail_config.enable_mailrise | default(true) and docker_check.rc == 0
   tags: [mail, security, config]

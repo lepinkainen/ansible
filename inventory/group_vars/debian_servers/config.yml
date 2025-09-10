@@ -30,6 +30,7 @@ user_groups:
 # ssmtp configured to use localhost:8025 for mailrise integration
 mail_config:
   from_line_override: true
+  enable_mailrise: true
 
 # Unattended Upgrades Configuration (non-sensitive)
 unattended_upgrades:
