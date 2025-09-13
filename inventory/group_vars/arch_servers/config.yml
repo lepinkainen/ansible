@@ -1,5 +1,5 @@
 ---
-# Arch-specific configuration variables  
+# Arch-specific configuration variables
 # Common variables are defined in group_vars/all/config.yml
 
 # Distribution-specific system configuration
@@ -10,6 +10,7 @@ motd_path: "/etc/profile.d"
 core_packages:
   - msmtp
   - msmtp-mta
+  - fd
 
 # User Configuration - Arch uses wheel group
 user_groups:

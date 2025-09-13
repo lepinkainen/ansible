@@ -16,10 +16,14 @@ common_packages:
   - tmux
   - fzf
   - rsync
+  - btop
   - htop
   - curl
   - figlet
   - starship
+  - duf
+  - ripgrep
+  - bat
 
 # User Configuration
 user_shell: "/usr/bin/fish"

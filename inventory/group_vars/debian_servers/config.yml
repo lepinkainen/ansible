@@ -10,6 +10,7 @@ motd_path: "/etc/update-motd.d"
 core_packages:
   - unattended-upgrades
   - ssmtp
+  - fd-find
 
 # User Configuration - Debian uses sudo group
 user_groups:
