@@ -1,5 +1,5 @@
 ---
-- name: "Set hostname to {{ hostname }}"
+- name: "Set hostname"
   hostname:
     name: "{{ hostname }}"
   when: hostname != ansible_hostname
