@@ -1,30 +1,4 @@
 ---
-# Debian unattended-upgrades
-- name: Update apt cache (Debian)
-  apt:
-    update_cache: true
-    cache_valid_time: 3600
-  when: ansible_os_family == "Debian"
-  tags: [upgrades, security]
-
-- name: Install unattended-upgrades package (Debian)
-  apt:
-    name: unattended-upgrades
-    state: present
-  when: ansible_os_family == "Debian"
-  tags: [upgrades, security, install]
-
-- name: Configure unattended-upgrades (Debian)
-  template:
-    src: 50unattended-upgrades.j2
-    dest: /etc/apt/apt.conf.d/50unattended-upgrades
-    backup: true
-  when: ansible_os_family == "Debian"
-  tags: [upgrades, security, config]
-- name: Configure auto upgrades (Debian)
-  template:
-    src: 20auto-upgrades.j2
-    dest: /etc/apt/apt.conf.d/20auto-upgrades
-    backup: true
-  when: ansible_os_family == "Debian"
-  tags: [upgrades, security, config]
+# Distribution-specific unattended upgrades configuration
+- name: Include distribution-specific tasks
+  include_tasks: "{{ ansible_os_family }}.yml"

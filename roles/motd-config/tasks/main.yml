@@ -1,79 +1,12 @@
 ---
+# Common setup: Remove default /etc/motd file
 - name: Remove default /etc/motd file
   file:
     path: /etc/motd
     state: absent
   tags: [motd, config]
 
-# Debian/Ubuntu MOTD configuration using /etc/update-motd.d/
-- name: Deploy MOTD logo script (Debian)
-  copy:
-    src: 01-logo
-    dest: /etc/update-motd.d/01-logo
-    mode: "0755"
-    owner: root
-    group: root
-  when: motd_config.enable_logo | default(true) and ansible_os_family == "Debian"
-  tags: [motd, config]
-
-- name: Deploy MOTD uname script (Debian)
-  copy:
-    src: 10-uname
-    dest: /etc/update-motd.d/10-uname
-    mode: "0755"
-    owner: root
-    group: root
-  when: motd_config.enable_uname | default(true) and ansible_os_family == "Debian"
-  tags: [motd, config]
-
-- name: Deploy MOTD disk space script (Debian)
-  template:
-    src: 15-diskspace.j2
-    dest: /etc/update-motd.d/15-diskspace
-    mode: "0755"
-    owner: root
-    group: root
-  when: motd_config.enable_diskspace | default(true) and ansible_os_family == "Debian"
-  tags: [motd, config]
-
-- name: Deploy MOTD docker health script (Debian)
-  copy:
-    src: 20-docker
-    dest: /etc/update-motd.d/20-docker
-    mode: "0755"
-    owner: root
-    group: root
-  when: motd_config.enable_docker | default(true) and ansible_os_family == "Debian"
-  tags: [motd, config]
-
-- name: Deploy MOTD security updates script (Debian)
-  copy:
-    src: 30-security-updates
-    dest: /etc/update-motd.d/30-security-updates
-    mode: "0755"
-    owner: root
-    group: root
-  when: motd_config.enable_security_updates | default(true) and ansible_os_family == "Debian"
-  tags: [motd, config]
-
-- name: Deploy MOTD unattended upgrades script (Debian)
-  copy:
-    src: 92-unattended-upgrades
-    dest: /etc/update-motd.d/92-unattended-upgrades
-    mode: "0755"
-    owner: root
-    group: root
-  when: motd_config.enable_unattended_upgrades | default(true) and ansible_os_family == "Debian"
-  tags: [motd, config]
-
-# Arch Linux MOTD configuration using /etc/profile.d/motd.sh
-- name: Create dynamic MOTD script for Arch Linux
-  template:
-    src: motd.sh.j2
-    dest: /etc/profile.d/motd.sh
-    mode: "0755"
-    owner: root
-    group: root
-  when: ansible_os_family == "Archlinux"
-  tags: [motd, config]
+# Distribution-specific MOTD configuration
+- name: Include distribution-specific MOTD tasks
+  include_tasks: "{{ ansible_os_family }}.yml"
 

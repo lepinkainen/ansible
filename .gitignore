@@ -26,3 +26,7 @@ host_vars/*/secrets.yml
 *.swp
 *.swo
 .envrc
+
+
+# plan files
+plan/*.md

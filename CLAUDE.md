@@ -8,7 +8,7 @@ This Ansible project automates Debian 13 and Arch Linux server provisioning with
 
 **Distribution Support**: Supports both Debian-based and Arch Linux systems through group-based inventory organization with shared common configuration and distribution-specific overrides.
 
-**Current Roles**: system-basics, packages, user-management, motd-config, mail-config, unattended-upgrades, arch-auto-updates, docker
+**Current Roles**: system-basics, packages, user-management, motd-config, mail-config, unattended-upgrades, docker
 
 ## Critical Architecture Details
 
@@ -59,7 +59,7 @@ inventory/
 - `common_packages`: Shared across distributions (defined in all/config.yml)
 - `core_packages`: Distribution-specific packages (merged with common_packages in roles)
 
-**Role Implementation**: Roles use `when: ansible_os_family == "..."` conditions and reference the standardized variables above for clean cross-distribution compatibility.
+**Role Implementation**: Roles use distribution-specific task files (e.g., `Debian.yml`, `Archlinux.yml`) with `include_tasks` for clean role-based separation. Legacy roles may still use `when: ansible_os_family == "..."` conditions.
 
 ### Git Security Hooks
 
@@ -129,7 +129,6 @@ ansible-vault edit inventory/host_vars/hostname/vault.yml
 - `motd_path`: Distribution-specific MOTD directory
 - `core_packages`: Distribution-specific packages (merged with common_packages)
 - `user_groups`: ["sudo"] (Debian) or ["wheel"] (Arch)
-- `unattended_upgrades.*` (Debian) or `auto_updates.*` (Arch): Distribution-specific update configuration
 
 ## Role-Specific Implementation Notes
 
@@ -146,19 +145,37 @@ ansible-vault edit inventory/host_vars/hostname/vault.yml
 
 ### motd-config
 
-- **Ansible-managed MOTD scripts**: Deploys numbered scripts to complement system defaults (removes /etc/motd first)
-- **Script sequence**: 01-logo → 10-uname → 15-diskspace → 20-docker → 30-security-updates → 92-unattended-upgrades
+- **Role-based separation**: Uses distribution-specific task files (`Debian.yml`, `Archlinux.yml`)
+- **Debian approach**: Deploys numbered scripts to `/etc/update-motd.d/` (01-logo → 10-uname → 15-diskspace → 20-docker → 30-security-updates → 92-unattended-upgrades)
+- **Arch approach**: Creates single dynamic MOTD script in `/etc/profile.d/motd.sh`
 - **Conditional deployment**: Uses `motd_config.enable_*` flags for each script component (default: true)
 - **Static files**: 01-logo, 10-uname, 20-docker, 30-security-updates, 92-unattended-upgrades
-- **Templates**: 15-diskspace.j2 (uses `disk_usage_locations` variable, supports color-coded usage thresholds)
+- **Templates**: 15-diskspace.j2 (Debian), motd.sh.j2 (Arch)
 - **File locations**: roles/motd-config/files/ and roles/motd-config/templates/
 
 ### mail-config
 
-- Installs and configures ssmtp to send mail to localhost:8025
-- Installs and configures mailrise systemd service for Discord notifications
-- Configures apt-listchanges to use ssmtp for package change notifications
+- **Role-based separation**: Uses distribution-specific task files (`Debian.yml`, `Archlinux.yml`) plus shared `mailrise-common.yml`
+- **Debian**: Installs and configures ssmtp + apt-listchanges integration
+- **Arch**: Installs and configures msmtp
+- **Common**: Mailrise Docker container setup for Discord notifications (when enabled)
 - Uses host-specific Discord webhook URLs from vault variables
+
+### unattended-upgrades
+
+- **Consolidated role**: Handles both Debian unattended-upgrades and Arch auto-updates (merged from former arch-auto-updates role)
+- **Role-based separation**: Uses distribution-specific task files (`Debian.yml`, `Archlinux.yml`)
+- **Debian**: apt unattended-upgrades package with configuration templates
+- **Arch**: Custom systemd timer + pacman upgrade script
+- **Template organization**: `templates/debian/` and `templates/arch/` subdirectories
+- **Common configuration**: Uses `auto_reboot_config.*` variables for reboot settings
+
+### user-management
+
+- **Role-based separation**: Uses `common-users.yml` for shared logic plus distribution-specific task files
+- **Common tasks**: User creation, shell setup, fisher installation
+- **Distribution-specific**: Deploy user group assignment (sudo vs wheel)
+- **Variable-driven**: Uses `user_groups` from group_vars instead of hardcoded conditions
 
 ## Development Workflow
 
@@ -178,7 +195,7 @@ To add support for a new distribution (e.g., Ubuntu, RHEL):
 1. **Inventory group**: Add new group to `inventory/production.yml`
 2. **Group variables**: Create `inventory/group_vars/new_distro_servers/` with `config.yml`, `main.yml`, and `vault.yml`
 3. **Distribution variables**: Define `package_manager`, `motd_path`, `user_groups`, and `core_packages` in the new config.yml
-4. **Role updates**: Add `when: ansible_os_family == "..."` conditions to roles as needed
+4. **Role updates**: For modernized roles (motd-config, mail-config, unattended-upgrades, user-management), create new distribution-specific task files (e.g., `Ubuntu.yml`). Legacy roles may need `when: ansible_os_family == "..."` conditions.
 5. **Test thoroughly**: Use `--check --diff` to verify behavior before deployment
 
 ### Security Requirements
@@ -231,9 +248,14 @@ This project follows the `llm-shared` guidelines:
 - `inventory/group_vars/arch_servers/config.yml` - Arch-specific config
 - `inventory/host_vars/hostname/vault.yml` - ENCRYPTED host secrets
 - `inventory/host_vars/hostname/config.yml` - Host-specific config (optional)
-- `roles/*/tasks/main.yml` - Role task definitions
+- `roles/*/tasks/main.yml` - Role orchestration and distribution dispatch
+- `roles/*/tasks/Debian.yml` - Debian-specific tasks (modernized roles)
+- `roles/*/tasks/Archlinux.yml` - Arch-specific tasks (modernized roles)
+- `roles/*/tasks/common-*.yml` - Shared task files (some roles)
 - `roles/motd-config/files/` - Static MOTD scripts  
 - `roles/motd-config/templates/` - Jinja2 MOTD templates
+- `roles/unattended-upgrades/templates/debian/` - Debian-specific templates
+- `roles/unattended-upgrades/templates/arch/` - Arch-specific templates
 
 ### Encryption Workflow
 

@@ -57,9 +57,9 @@ if pacman -Su --noconfirm; then
         touch "$REBOOT_FLAG"
         
         # Schedule reboot if configured
-        {% if auto_updates.automatic_reboot | default(true) %}
-        log "Scheduling reboot for {{ auto_updates.automatic_reboot_time | default('02:00') }}"
-        echo "shutdown -r {{ auto_updates.automatic_reboot_time | default('02:00') }} 'Automatic reboot after system update'" | at now
+        {% if auto_reboot_config.automatic_reboot | default(true) %}
+        log "Scheduling reboot for {{ auto_reboot_config.automatic_reboot_time | default('02:00') }}"
+        echo "shutdown -r {{ auto_reboot_config.automatic_reboot_time | default('02:00') }} 'Automatic reboot after system update'" | at now
         {% endif %}
     fi
     

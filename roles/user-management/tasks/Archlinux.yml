@@ -1,0 +1,9 @@
+---
+# Arch-specific user group management (wheel)
+- name: Add deploy user to wheel group (Arch)
+  user:
+    name: "{{ deploy_user }}"
+    groups: wheel
+    append: yes
+  when: deploy_user != "root"
+  tags: [user-management, deploy-user, config]

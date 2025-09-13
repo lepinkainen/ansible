@@ -1,0 +1,40 @@
+---
+# Debian-specific mail configuration (ssmtp + apt-listchanges)
+- name: Install ssmtp (Debian)
+  apt:
+    name:
+      - ssmtp
+    state: present
+  tags: [mail, security, install]
+
+- name: Configure ssmtp (Debian)
+  template:
+    src: ssmtp.conf.j2
+    dest: /etc/ssmtp/ssmtp.conf
+    backup: yes
+    mode: '0644'
+  tags: [mail, security, config]
+
+- name: Configure apt-listchanges to use ssmtp (Debian)
+  lineinfile:
+    path: /etc/apt/listchanges.conf
+    regexp: '^#?frontend='
+    line: 'frontend=mail'
+    backup: yes
+  tags: [mail, security, config]
+
+- name: Set apt-listchanges email method to use sendmail/ssmtp (Debian)
+  lineinfile:
+    path: /etc/apt/listchanges.conf
+    regexp: '^#?email_address='
+    line: 'email_address=root'
+    backup: yes
+  tags: [mail, security, config]
+
+- name: Ensure apt-listchanges uses the correct mail command (Debian)
+  lineinfile:
+    path: /etc/apt/listchanges.conf
+    regexp: '^#?which='
+    line: 'which=both'
+    backup: yes
+  tags: [mail, security, config]
