@@ -11,6 +11,7 @@ core_packages:
   - msmtp
   - msmtp-mta
   - fd
+  - pinentry
 
 # User Configuration - Arch uses wheel group
 user_groups:

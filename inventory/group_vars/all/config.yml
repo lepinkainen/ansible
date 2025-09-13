@@ -24,6 +24,14 @@ common_packages:
   - duf
   - ripgrep
   - bat
+  - neovim
+  - atuin
+  - ack
+  - eza
+  - direnv
+  - httpie
+  - wget
+  - zoxide
 
 # User Configuration
 user_shell: "/usr/bin/fish"
