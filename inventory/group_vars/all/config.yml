@@ -1,0 +1,51 @@
+---
+# Common configuration variables shared across all server groups
+# Distribution-specific overrides should be placed in group_vars/<group>/config.yml
+
+# System Configuration
+timezone: Europe/Helsinki
+locales:
+  - "en_US.UTF-8"
+  - "en_GB.UTF-8"
+
+# Common packages across all distributions
+# Note: Package names may differ by distribution - override in group-specific configs
+common_packages:
+  - fish
+  - mosh
+  - tmux
+  - fzf
+  - rsync
+  - htop
+  - curl
+  - figlet
+  - starship
+
+# User Configuration
+user_shell: "/usr/bin/fish"
+
+# Mail Configuration (non-sensitive)
+# Configured to use localhost:8025 for mailrise integration
+mail_config:
+  from_line_override: true
+  enable_mailrise: true
+
+# MOTD Configuration (non-sensitive)
+motd_config:
+  enable_logo: true
+  enable_uname: true
+  enable_diskspace: true
+  enable_docker: true
+  enable_security_updates: true
+  enable_unattended_upgrades: true
+
+# Disk Usage Monitoring (non-sensitive)
+# Default locations for disk usage monitoring in MOTD
+# Can be overridden in host_vars for specific servers
+disk_usage_locations:
+  - "/"
+
+# Auto-update/upgrade configuration
+auto_reboot_config:
+  automatic_reboot: true
+  automatic_reboot_time: "02:00"

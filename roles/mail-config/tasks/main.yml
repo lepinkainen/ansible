@@ -1,9 +1,19 @@
 ---
-- name: Install ssmtp
+- name: Install ssmtp (Debian)
   apt:
     name:
       - ssmtp
     state: present
+  when: ansible_os_family == "Debian"
+  tags: [mail, security, install]
+
+- name: Install msmtp (Arch)
+  pacman:
+    name:
+      - msmtp
+      - msmtp-mta
+    state: present
+  when: ansible_os_family == "Archlinux"
   tags: [mail, security, install]
 
 - name: Check if Docker is installed and running
@@ -60,36 +70,49 @@
   when: mail_config.enable_mailrise | default(true) and docker_check.rc == 0
   tags: [mail, security, install]
 
-- name: Configure ssmtp
+- name: Configure ssmtp (Debian)
   template:
     src: ssmtp.conf.j2
     dest: /etc/ssmtp/ssmtp.conf
     backup: yes
     mode: '0644'
+  when: ansible_os_family == "Debian"
   tags: [mail, security, config]
 
-- name: Configure apt-listchanges to use ssmtp
+- name: Configure msmtp (Arch)
+  template:
+    src: msmtprc.j2
+    dest: /etc/msmtprc
+    backup: yes
+    mode: '0644'
+  when: ansible_os_family == "Archlinux"
+  tags: [mail, security, config]
+
+- name: Configure apt-listchanges to use ssmtp (Debian)
   lineinfile:
     path: /etc/apt/listchanges.conf
     regexp: '^#?frontend='
     line: 'frontend=mail'
     backup: yes
+  when: ansible_os_family == "Debian"
   tags: [mail, security, config]
 
-- name: Set apt-listchanges email method to use sendmail (ssmtp)
+- name: Set apt-listchanges email method to use sendmail/ssmtp (Debian)
   lineinfile:
     path: /etc/apt/listchanges.conf
     regexp: '^#?email_address='
     line: 'email_address=root'
     backup: yes
+  when: ansible_os_family == "Debian"
   tags: [mail, security, config]
 
-- name: Ensure apt-listchanges uses the correct mail command
+- name: Ensure apt-listchanges uses the correct mail command (Debian)
   lineinfile:
     path: /etc/apt/listchanges.conf
     regexp: '^#?which='
     line: 'which=both'
     backup: yes
+  when: ansible_os_family == "Debian"
   tags: [mail, security, config]
 
 - name: Configure mailrise

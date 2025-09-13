@@ -1,0 +1,12 @@
+[Unit]
+Description=Run automatic system updates daily
+Requires=arch-auto-update.service
+
+[Timer]
+# Run daily at configured time (default 01:30)
+OnCalendar=*-*-* {{ auto_updates.update_time | default('01:30') }}:00
+RandomizedDelaySec=1800
+Persistent=yes
+
+[Install]
+WantedBy=timers.target

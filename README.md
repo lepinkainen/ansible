@@ -28,6 +28,24 @@ ssh deploy@example.com
 sudo whoami  # Should return 'root'
 ```
 
+On Arch linux, use `wheel` group instead of `sudo`.
+
+```bash
+# On the Arch server as root
+pacman -Syu sudo
+
+visudo  # Uncomment %wheel ALL=(ALL) ALL
+
+useradd -m -s /bin/bash -G wheel deploy
+passwd deploy
+# Set up SSH key for deploy user (from your local machine)
+ssh-copy-id deploy@example.com
+
+# Test deploy user access (from your local machine)
+ssh deploy@example.com
+sudo whoami  # Should return 'root'
+```
+
 ## Setup Steps
 
 ### 1. Install Dependencies

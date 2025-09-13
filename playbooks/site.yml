@@ -1,6 +1,6 @@
 ---
-- name: Complete Debian server setup
-  hosts: debian_servers
+- name: Complete server setup
+  hosts: debian_servers:arch_servers
   become: true
 
   roles:
@@ -10,6 +10,7 @@
     - user-management
     - mail-config
     - unattended-upgrades
+    - arch-auto-updates
 
   post_tasks:
     - name: Display setup completion message
@@ -19,5 +20,5 @@
           - ""
           - "Next steps:"
           - "1. Apply Chezmoi setup for user-level configurations"
-          - "2. Verify mail configuration is working"  
+          - "2. Verify mail configuration is working"
           - "3. Test unattended upgrades functionality"

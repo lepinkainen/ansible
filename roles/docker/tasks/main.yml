@@ -13,13 +13,6 @@
     state: present
   tags: [docker, install]
 
-- name: Install Docker Compose
-  apt:
-    name: docker-compose
-    state: present
-  ignore_errors: true
-  tags: [docker, install]
-
 - name: Start and enable Docker service
   systemd:
     name: docker

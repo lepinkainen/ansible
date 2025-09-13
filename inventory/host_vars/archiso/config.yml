@@ -1,0 +1,12 @@
+---
+# Non-sensitive host-specific configuration for archiso
+
+# Host-specific overrides
+hostname: "{{ vault_hostname }}"
+
+# Disk usage monitoring locations specific to this server
+disk_usage_locations:
+  - "/"
+# Mail configuration override (if mailrise not needed)
+# mail_config:
+#   enable_mailrise: false

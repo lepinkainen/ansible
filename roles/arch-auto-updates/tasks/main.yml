@@ -1,0 +1,38 @@
+---
+# Arch Linux auto-updates using systemd timers
+- name: Create auto-update script (Arch)
+  template:
+    src: arch-auto-update.sh.j2
+    dest: /usr/local/bin/arch-auto-update.sh
+    mode: '0755'
+    backup: true
+  when: ansible_os_family == "Archlinux"
+  tags: [upgrades, security, config]
+
+
+- name: Create systemd service for auto-updates (Arch)
+  template:
+    src: arch-auto-update.service.j2
+    dest: /etc/systemd/system/arch-auto-update.service
+    backup: true
+  when: ansible_os_family == "Archlinux"
+  notify: reload systemd
+  tags: [upgrades, security, config]
+
+- name: Create systemd timer for auto-updates (Arch)
+  template:
+    src: arch-auto-update.timer.j2
+    dest: /etc/systemd/system/arch-auto-update.timer
+    backup: true
+  when: ansible_os_family == "Archlinux"
+  notify: reload systemd
+  tags: [upgrades, security, config]
+
+- name: Enable and start auto-update timer (Arch)
+  systemd:
+    name: arch-auto-update.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: ansible_os_family == "Archlinux"
+  tags: [upgrades, security, config]
