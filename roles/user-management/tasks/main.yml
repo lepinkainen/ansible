@@ -9,12 +9,20 @@
   when: deploy_user != "root"
   tags: [user-management, deploy-user, config]
 
-- name: Add deploy user to sudo group
+- name: Add deploy user to sudo group (Debian)
   user:
     name: "{{ deploy_user }}"
     groups: sudo
     append: yes
-  when: deploy_user != "root"
+  when: deploy_user != "root" and ansible_os_family == "Debian"
+  tags: [user-management, deploy-user, config]
+
+- name: Add deploy user to wheel group (Arch)
+  user:
+    name: "{{ deploy_user }}"
+    groups: wheel
+    append: yes
+  when: deploy_user != "root" and ansible_os_family == "Archlinux"
   tags: [user-management, deploy-user, config]
 
 # Actual user setup - full environment

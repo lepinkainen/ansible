@@ -7,13 +7,13 @@ server_user: "{{ vault_target_user }}"
 deploy_user: "{{ vault_deploy_user }}"
 
 # Mail Configuration (mixed sensitive/non-sensitive)
-# Merges with mail_config from all/config.yml and debian_servers/config.yml
+# Merges with mail_config from all/config.yml and arch_servers/config.yml  
 mail_config:
   smtp_host: "{{ vault_smtp_host }}"
   use_tls: false
   use_starttls: false
 
-# Unattended Upgrades Configuration (mixed sensitive/non-sensitive)  
-# Merges with unattended_upgrades from debian_servers/config.yml
-unattended_upgrades:
+# Auto Updates Configuration (mixed sensitive/non-sensitive)
+# Merges with auto_updates from arch_servers/config.yml
+auto_updates:
   email: "{{ vault_notification_email }}"

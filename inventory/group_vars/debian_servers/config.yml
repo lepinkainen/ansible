@@ -1,53 +1,22 @@
 ---
-# Non-sensitive configuration variables
+# Debian-specific configuration variables
+# Common variables are defined in group_vars/all/config.yml
 
-# System Configuration
-timezone: Europe/Helsinki
-locales:
-  - "en_US.UTF-8"
-  - "en_GB.UTF-8"
+# Distribution-specific system configuration
+package_manager: "apt"
+motd_path: "/etc/update-motd.d"
 
-# Package Configuration
+# Debian-specific packages (extends common_packages from all/config.yml)
 core_packages:
-  - fish
-  - mosh
-  - tmux
-  - fzf
-  - rsync
-  - htop
-  - curl
   - unattended-upgrades
   - ssmtp
-  - figlet
-  - starship
 
-# User Configuration
-user_shell: "/usr/bin/fish"
+# User Configuration - Debian uses sudo group
 user_groups:
   - sudo
 
-# Mail Configuration (non-sensitive)
-# ssmtp configured to use localhost:8025 for mailrise integration
-mail_config:
-  from_line_override: true
-  enable_mailrise: true
-
-# Unattended Upgrades Configuration (non-sensitive)
+# Unattended Upgrades Configuration (Debian-specific)
 unattended_upgrades:
-  automatic_reboot: true
-  automatic_reboot_time: "02:00"
-
-# MOTD Configuration (non-sensitive)
-motd_config:
-  enable_logo: true
-  enable_uname: true
-  enable_diskspace: true
-  enable_docker: true
-  enable_security_updates: true
-  enable_unattended_upgrades: true
-
-# Disk Usage Monitoring (non-sensitive)
-# Default locations for disk usage monitoring in MOTD
-# Can be overridden in host_vars for specific servers
-disk_usage_locations:
-  - "/"
+  # Inherits automatic_reboot settings from all/config.yml auto_reboot_config
+  enable_auto_upgrades: true
+  auto_upgrade_time: "01:30"

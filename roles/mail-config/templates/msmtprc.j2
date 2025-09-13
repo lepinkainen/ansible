@@ -1,0 +1,16 @@
+# Configuration for msmtp (Arch Linux)
+
+# Set default values for all following accounts.
+defaults
+auth           off
+tls            off
+tls_starttls   off
+
+# Define the account.
+account        default
+host           localhost
+port           8025
+from           root@{{ inventory_hostname }}
+
+# Set a default account
+account default : default

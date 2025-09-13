@@ -1,0 +1,23 @@
+---
+# Arch-specific configuration variables  
+# Common variables are defined in group_vars/all/config.yml
+
+# Distribution-specific system configuration
+package_manager: "pacman"
+motd_path: "/etc/profile.d"
+
+# Arch-specific packages (extends common_packages from all/config.yml)
+core_packages:
+  - msmtp
+  - msmtp-mta
+
+# User Configuration - Arch uses wheel group
+user_groups:
+  - wheel
+
+# Auto Updates Configuration (Arch-specific)
+# Uses systemd timer for pacman -Syu
+auto_updates:
+  # Inherits automatic_reboot settings from all/config.yml auto_reboot_config
+  enable_auto_updates: true
+  update_time: "01:30"

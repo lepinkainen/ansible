@@ -1,12 +1,14 @@
-# Ansible Debian Server Automation
+# Ansible Multi-Distribution Server Automation
 
 ## Project Overview
 
-This Ansible project automates Debian 13 server provisioning with a security-first approach. Uses 1Password integration for secrets management and encrypted inventory/vault files. The architecture follows role-based organization with clear separation between sensitive and non-sensitive configuration.
+This Ansible project automates Debian 13 and Arch Linux server provisioning with a security-first approach. Uses 1Password integration for secrets management and encrypted inventory/vault files. The architecture follows role-based organization with clear separation between sensitive and non-sensitive configuration.
 
 **Key Design Decision**: No bootstrap playbook - deploy user setup is done manually as documented in README.md. This ensures proper SSH key setup and sudo access before Ansible runs.
 
-**Current Roles**: system-basics, packages, user-management, motd-config, mail-config, unattended-upgrades, docker
+**Distribution Support**: Supports both Debian-based and Arch Linux systems through group-based inventory organization with shared common configuration and distribution-specific overrides.
+
+**Current Roles**: system-basics, packages, user-management, motd-config, mail-config, unattended-upgrades, arch-auto-updates, docker
 
 ## Critical Architecture Details
 
@@ -17,20 +19,47 @@ This Ansible project automates Debian 13 server provisioning with a security-fir
 - **No manual password files**: Everything automated via 1Password CLI
 - **ansible.cfg** already configured with password scripts
 
-### Security-First File Structure
+### Security-First File Structure with Multi-Distribution Support
 
 ```plain
 inventory/
 ├── production.yml              # ENCRYPTED (YAML format, not INI)
-├── group_vars/debian_servers/
-│   ├── main.yml               # References vault variables
-│   ├── config.yml             # Non-sensitive config
-│   └── vault.yml              # ENCRYPTED sensitive data
+├── group_vars/
+│   ├── all/
+│   │   └── config.yml         # Shared common configuration
+│   ├── debian_servers/
+│   │   ├── main.yml           # References vault variables + config merges
+│   │   ├── config.yml         # Debian-specific config
+│   │   └── vault.yml          # ENCRYPTED sensitive data
+│   └── arch_servers/
+│       ├── main.yml           # References vault variables + config merges
+│       ├── config.yml         # Arch-specific config
+│       └── vault.yml          # ENCRYPTED sensitive data
 └── host_vars/[hostname]/
+    ├── config.yml             # Host-specific non-sensitive config (optional)
     └── vault.yml              # ENCRYPTED host-specific secrets
 ```
 
 **Critical**: All `vault.yml` files and `production.yml` MUST be encrypted with `ansible-vault`.
+
+### Distribution-Specific Configuration Management
+
+**Architecture Pattern**: Group-based inventory with variable layering for clean multi-distribution support.
+
+**Variable Precedence** (Ansible's standard precedence applies):
+1. `group_vars/all/config.yml` - Common configuration shared across all distributions
+2. `group_vars/{distribution_group}/config.yml` - Distribution-specific overrides and additions  
+3. `group_vars/{distribution_group}/main.yml` - Merges sensitive vault variables with config
+4. `host_vars/{hostname}/config.yml` - Host-specific overrides (optional)
+
+**Key Distribution Variables**:
+- `package_manager`: "apt" (Debian) or "pacman" (Arch) 
+- `motd_path`: "/etc/update-motd.d" (Debian) or "/etc/profile.d" (Arch)
+- `user_groups`: ["sudo"] (Debian) or ["wheel"] (Arch)
+- `common_packages`: Shared across distributions (defined in all/config.yml)
+- `core_packages`: Distribution-specific packages (merged with common_packages in roles)
+
+**Role Implementation**: Roles use `when: ansible_os_family == "..."` conditions and reference the standardized variables above for clean cross-distribution compatibility.
 
 ### Git Security Hooks
 
@@ -46,8 +75,12 @@ inventory/
 # Complete server setup (passwords from 1Password automatically)
 ansible-playbook playbooks/site.yml
 
+# Target specific distribution group  
+ansible-playbook playbooks/site.yml --limit debian_servers
+ansible-playbook playbooks/site.yml --limit arch_servers
+
 # Target specific server
-ansible-playbook playbooks/site.yml --limit longshot
+ansible-playbook playbooks/site.yml --limit hostname
 
 # Dry run with diff
 ansible-playbook playbooks/site.yml --check --diff --limit hostname
@@ -59,6 +92,7 @@ ansible-playbook playbooks/site.yml --check --diff --limit hostname
 # Edit encrypted files (uses ansible.cfg password script)
 ansible-vault edit inventory/production.yml
 ansible-vault edit inventory/group_vars/debian_servers/vault.yml
+ansible-vault edit inventory/group_vars/arch_servers/vault.yml
 ansible-vault edit inventory/host_vars/hostname/vault.yml
 
 # Bulk encrypt all sensitive files
@@ -80,13 +114,22 @@ ansible-vault edit inventory/host_vars/hostname/vault.yml
 
 ### Non-Sensitive (Plain text in config.yml)
 
+**Common variables** (defined in `group_vars/all/config.yml`):
 - `timezone`: Server timezone (default: Europe/Helsinki)
-- `core_packages`: List of packages to install
+- `locales`: System locales (default: en_US.UTF-8, en_GB.UTF-8)
+- `common_packages`: Packages shared across all distributions
 - `user_shell`: Default shell (/usr/bin/fish)
 - `motd_config.*`: MOTD customization options
-- `unattended_upgrades.*`: Update timing and behavior
+- `auto_reboot_config.*`: Common reboot settings
 - `disk_usage_locations`: Array of mount points to monitor (default: ['/'])
-- `mail_config.enable_mailrise`: Boolean to control mailrise service (host-specific override)
+- `mail_config.enable_mailrise`: Boolean to control mailrise service
+
+**Distribution-specific variables** (defined in `group_vars/{distribution}/config.yml`):
+- `package_manager`: "apt" (Debian) or "pacman" (Arch)
+- `motd_path`: Distribution-specific MOTD directory
+- `core_packages`: Distribution-specific packages (merged with common_packages)
+- `user_groups`: ["sudo"] (Debian) or ["wheel"] (Arch)
+- `unattended_upgrades.*` (Debian) or `auto_updates.*` (Arch): Distribution-specific update configuration
 
 ## Role-Specific Implementation Notes
 
@@ -97,7 +140,9 @@ ansible-vault edit inventory/host_vars/hostname/vault.yml
 
 ### packages  
 
-- Installs core packages including starship prompt via apt package manager
+- Installs packages using distribution-specific package managers (apt/pacman)
+- Combines `common_packages` (shared) and `core_packages` (distribution-specific)
+- Automatically handles distribution differences through inventory group variables
 
 ### motd-config
 
@@ -119,12 +164,22 @@ ansible-vault edit inventory/host_vars/hostname/vault.yml
 
 ### Adding New Servers
 
-1. **Manual setup**: Create `deploy` user with sudo access (see README.md)
-2. **Inventory**: Add to encrypted `inventory/production.yml`
+1. **Manual setup**: Create `deploy` user with sudo/wheel access (see README.md)
+2. **Inventory**: Add to encrypted `inventory/production.yml` under appropriate group (`debian_servers` or `arch_servers`)
 3. **Host vars**: Create `host_vars/hostname/vault.yml` with `vault_hostname` and `vault_discord_url`
 4. **Optional config**: Create `host_vars/hostname/config.yml` for host-specific non-sensitive config (e.g., `disk_usage_locations`, `mail_config.enable_mailrise`)
 5. **Test**: `ansible hostname -m ping`
 6. **Deploy**: `ansible-playbook playbooks/site.yml --limit hostname --check`
+
+### Adding New Distributions
+
+To add support for a new distribution (e.g., Ubuntu, RHEL):
+
+1. **Inventory group**: Add new group to `inventory/production.yml`
+2. **Group variables**: Create `inventory/group_vars/new_distro_servers/` with `config.yml`, `main.yml`, and `vault.yml`
+3. **Distribution variables**: Define `package_manager`, `motd_path`, `user_groups`, and `core_packages` in the new config.yml
+4. **Role updates**: Add `when: ansible_os_family == "..."` conditions to roles as needed
+5. **Test thoroughly**: Use `--check --diff` to verify behavior before deployment
 
 ### Security Requirements
 
@@ -168,11 +223,14 @@ This project follows the `llm-shared` guidelines:
 
 ### Essential File Patterns
 
-- `inventory/production.yml` - ENCRYPTED inventory (YAML format)  
-- `inventory/group_vars/debian_servers/vault.yml` - ENCRYPTED group secrets
-- `inventory/group_vars/debian_servers/config.yml` - Plain group config
+- `inventory/production.yml` - ENCRYPTED inventory (YAML format)
+- `inventory/group_vars/all/config.yml` - Common shared configuration
+- `inventory/group_vars/debian_servers/vault.yml` - ENCRYPTED Debian group secrets
+- `inventory/group_vars/debian_servers/config.yml` - Debian-specific config
+- `inventory/group_vars/arch_servers/vault.yml` - ENCRYPTED Arch group secrets  
+- `inventory/group_vars/arch_servers/config.yml` - Arch-specific config
 - `inventory/host_vars/hostname/vault.yml` - ENCRYPTED host secrets
-- `inventory/host_vars/hostname/config.yml` - Plain host config (optional)
+- `inventory/host_vars/hostname/config.yml` - Host-specific config (optional)
 - `roles/*/tasks/main.yml` - Role task definitions
 - `roles/motd-config/files/` - Static MOTD scripts  
 - `roles/motd-config/templates/` - Jinja2 MOTD templates

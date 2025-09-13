@@ -37,4 +37,11 @@
   apt:
     update_cache: yes
     cache_valid_time: 3600
+  when: ansible_os_family == "Debian"
+  tags: [system-basics, system]
+
+- name: Update pacman cache
+  pacman:
+    update_cache: yes
+  when: ansible_os_family == "Archlinux"
   tags: [system-basics, system]
