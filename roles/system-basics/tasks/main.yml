@@ -25,23 +25,7 @@
     name: "{{ timezone }}"
   tags: [system-basics, system, config]
 
-- name: Configure timezone file
-  copy:
-    content: "{{ timezone }}\n"
-    dest: /etc/timezone
-    backup: yes
-  notify: reconfigure tzdata
-  tags: [system-basics, system, config]
 
-- name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
-  when: ansible_os_family == "Debian"
-  tags: [system-basics, system]
-
-- name: Update pacman cache
-  pacman:
-    update_cache: yes
-  when: ansible_os_family == "Archlinux"
-  tags: [system-basics, system]
+# Distribution-specific system basics tasks
+- name: Include distribution-specific tasks
+  include_tasks: "{{ ansible_os_family }}.yml"

@@ -59,7 +59,7 @@ inventory/
 - `common_packages`: Shared across distributions (defined in all/config.yml)
 - `core_packages`: Distribution-specific packages (merged with common_packages in roles)
 
-**Role Implementation**: Roles use distribution-specific task files (e.g., `Debian.yml`, `Archlinux.yml`) with `include_tasks` for clean role-based separation. Legacy roles may still use `when: ansible_os_family == "..."` conditions.
+**Role Implementation**: **Modernized Architecture** - All current roles follow the `include_tasks: "{{ ansible_os_family }}.yml"` pattern for distribution-specific logic. Each role's `main.yml` handles common tasks and includes OS-specific task files (`Debian.yml`, `Archlinux.yml`) as needed.
 
 ### Git Security Hooks
 
@@ -134,14 +134,15 @@ ansible-vault edit inventory/host_vars/hostname/vault.yml
 
 ### system-basics
 
-- Uses `systemd-hostnamed` for hostname setting (system-basics/tasks/main.yml:2-4)
-- Configures UTF-8 locales via `locale-gen` (system-basics/tasks/main.yml:13-17)
+- **Modernized architecture**: Uses `include_tasks: "{{ ansible_os_family }}.yml"` pattern
+- **Common tasks**: Hostname setting via `hostname` module, UTF-8 locales via `locale-gen`, timezone via `timezone` module
+- **Distribution-specific**: Package cache updates (apt/pacman) in separate `Debian.yml`/`Archlinux.yml` files
 
 ### packages  
 
-- Installs packages using distribution-specific package managers (apt/pacman)
-- Combines `common_packages` (shared) and `core_packages` (distribution-specific)
-- Automatically handles distribution differences through inventory group variables
+- **Simplified architecture**: Uses generic `package` module (auto-detects apt/pacman)
+- **Package management**: Combines `common_packages` (shared) + `core_packages` (distribution-specific)
+- **Two-step process**: Cache update first, then package installation
 
 ### motd-config
 
@@ -195,7 +196,7 @@ To add support for a new distribution (e.g., Ubuntu, RHEL):
 1. **Inventory group**: Add new group to `inventory/production.yml`
 2. **Group variables**: Create `inventory/group_vars/new_distro_servers/` with `config.yml`, `main.yml`, and `vault.yml`
 3. **Distribution variables**: Define `package_manager`, `motd_path`, `user_groups`, and `core_packages` in the new config.yml
-4. **Role updates**: For modernized roles (motd-config, mail-config, unattended-upgrades, user-management), create new distribution-specific task files (e.g., `Ubuntu.yml`). Legacy roles may need `when: ansible_os_family == "..."` conditions.
+4. **Role updates**: All roles follow the modernized `include_tasks: "{{ ansible_os_family }}.yml"` pattern. Create new distribution-specific task files (e.g., `Ubuntu.yml`) for each role.
 5. **Test thoroughly**: Use `--check --diff` to verify behavior before deployment
 
 ### Security Requirements
@@ -218,13 +219,20 @@ ansible debian_servers -m ping
 ./scripts/encrypt-vault-files.sh --dry-run
 ```
 
-## LLM-Shared Integration
+## LLM-Shared Integration & Development Guidelines
 
-This project follows the `llm-shared` guidelines:
+This project follows the `llm-shared` submodule standards:
 
-- **Git hooks**: Located in `scripts/hooks/` (enabled via core.hooksPath)
-- **No direct main commits**: Use feature branches
-- **Task-based workflow**: Use `task` command for builds (when applicable)
+- **Shell tools**: Use modern alternatives (`rg` instead of `grep`, `fd` instead of `find`) 
+- **Git hooks**: Located in `scripts/hooks/` (enabled via `git config core.hooksPath scripts/hooks`)
+- **Development workflow**: Feature branches preferred over direct main commits
+- **Project guidelines**: See `llm-shared/project_tech_stack.md` for universal practices
+
+**AI Assistant Guidelines**:
+- Use `rg` for searching instead of `grep` or `find` 
+- Follow the modernized role architecture pattern (`include_tasks: "{{ ansible_os_family }}.yml"`)
+- Always test changes with `--check --diff` before real deployment
+- Use generic `package` module instead of distribution-specific ones where possible
 
 ## Critical Gotchas
 
@@ -249,9 +257,9 @@ This project follows the `llm-shared` guidelines:
 - `inventory/host_vars/hostname/vault.yml` - ENCRYPTED host secrets
 - `inventory/host_vars/hostname/config.yml` - Host-specific config (optional)
 - `roles/*/tasks/main.yml` - Role orchestration and distribution dispatch
-- `roles/*/tasks/Debian.yml` - Debian-specific tasks (modernized roles)
-- `roles/*/tasks/Archlinux.yml` - Arch-specific tasks (modernized roles)
-- `roles/*/tasks/common-*.yml` - Shared task files (some roles)
+- `roles/*/tasks/Debian.yml` - Debian-specific tasks (all roles)
+- `roles/*/tasks/Archlinux.yml` - Arch-specific tasks (all roles)  
+- `roles/*/tasks/common-*.yml` - Shared task files (mail-config, user-management)
 - `roles/motd-config/files/` - Static MOTD scripts  
 - `roles/motd-config/templates/` - Jinja2 MOTD templates
 - `roles/unattended-upgrades/templates/debian/` - Debian-specific templates

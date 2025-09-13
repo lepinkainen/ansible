@@ -1,0 +1,7 @@
+---
+# Arch Linux-specific system basics tasks
+
+- name: Update pacman cache
+  pacman:
+    update_cache: yes
+  tags: [system-basics, system]
