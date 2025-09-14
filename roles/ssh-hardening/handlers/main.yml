@@ -1,0 +1,12 @@
+---
+- name: restart ssh debian
+  systemd:
+    name: ssh
+    state: restarted
+  listen: restart ssh debian
+
+- name: restart ssh arch
+  systemd:
+    name: sshd
+    state: restarted
+  listen: restart ssh arch

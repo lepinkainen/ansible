@@ -1,0 +1,62 @@
+---
+- name: SSH Security Hardening for Production Servers
+  hosts: debian_servers:arch_servers
+  become: true
+  gather_facts: true
+
+  pre_tasks:
+    - name: Display SSH hardening warning
+      debug:
+        msg:
+          - "=========================================="
+          - "   SSH SECURITY HARDENING PLAYBOOK"
+          - "=========================================="
+          - ""
+          - "This playbook will:"
+          - "• Disable password authentication system-wide"
+          - "• Disable root login completely"
+          - "• Force public key authentication only"
+          - ""
+          - "IMPORTANT:"
+          - "• Ensure SSH key access is working before proceeding"
+          - "• Tailscale SSH will continue to work normally"
+          - "• Keep this connection open until verification"
+          - ""
+          - "Proceeding in 10 seconds..."
+
+    - name: Pause for confirmation
+      pause:
+        seconds: 10
+
+  roles:
+    - ssh-hardening
+
+  post_tasks:
+    - name: Display completion and verification instructions
+      debug:
+        msg:
+          - "=========================================="
+          - "   SSH HARDENING COMPLETED"
+          - "=========================================="
+          - ""
+          - "SSH security hardening has been applied."
+          - ""
+          - "VERIFICATION STEPS:"
+          - "1. Test SSH connection in a NEW terminal:"
+          - "   ssh {{ deploy_user }}@{{ inventory_hostname }}"
+          - "2. Verify password authentication is disabled"
+          - "3. Verify only public key authentication works"
+          - ""
+          - "If you lose access:"
+          - "• Use Tailscale SSH: ssh root@{{ inventory_hostname }}"
+          - "• Or use console access to restore SSH config"
+          - "• Backup config saved as: /etc/ssh/sshd_config.backup.*"
+
+    - name: Test current SSH connection still works
+      ping:
+      register: connection_test
+      failed_when: false
+
+    - name: Display connection test result
+      debug:
+        msg: "SSH connection test: {{ 'PASSED' if connection_test is success else 'FAILED' }}"

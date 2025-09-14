@@ -1,0 +1,67 @@
+---
+- name: Backup SSH config before hardening
+  copy:
+    src: /etc/ssh/sshd_config
+    dest: /etc/ssh/sshd_config.backup.{{ ansible_date_time.epoch }}
+    remote_src: yes
+    backup: yes
+  tags: [ssh-hardening, security, backup]
+
+- name: Disable SSH password authentication
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PasswordAuthentication'
+    line: 'PasswordAuthentication no'
+    backup: yes
+  notify: restart ssh arch
+  tags: [ssh-hardening, security]
+
+- name: Disable SSH challenge response authentication
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?ChallengeResponseAuthentication'
+    line: 'ChallengeResponseAuthentication no'
+    backup: yes
+  notify: restart ssh arch
+  tags: [ssh-hardening, security]
+
+- name: Disable root login completely
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PermitRootLogin'
+    line: 'PermitRootLogin no'
+    backup: yes
+  notify: restart ssh arch
+  tags: [ssh-hardening, security]
+
+- name: Ensure public key authentication is enabled
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PubkeyAuthentication'
+    line: 'PubkeyAuthentication yes'
+    backup: yes
+  notify: restart ssh arch
+  tags: [ssh-hardening, security]
+
+- name: Force authentication methods to public key only
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?AuthenticationMethods'
+    line: 'AuthenticationMethods publickey'
+    backup: yes
+  notify: restart ssh arch
+  tags: [ssh-hardening, security]
+
+- name: Disable SSH keyboard interactive authentication
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?KbdInteractiveAuthentication'
+    line: 'KbdInteractiveAuthentication no'
+    backup: yes
+  notify: restart ssh arch
+  tags: [ssh-hardening, security]
+
+- name: Validate SSH configuration syntax
+  command: sshd -t -f /etc/ssh/sshd_config
+  changed_when: false
+  tags: [ssh-hardening, validation]

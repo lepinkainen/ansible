@@ -8,7 +8,7 @@ This Ansible project automates Debian 13 and Arch Linux server provisioning with
 
 **Distribution Support**: Supports both Debian-based and Arch Linux systems through group-based inventory organization with shared common configuration and distribution-specific overrides.
 
-**Current Roles**: system-basics, packages, user-management, motd-config, mail-config, unattended-upgrades, tailscale, docker
+**Current Roles**: system-basics, packages, user-management, motd-config, mail-config, unattended-upgrades, tailscale, docker, ssh-hardening
 
 ## Critical Architecture Details
 
@@ -77,7 +77,7 @@ inventory/
 # Complete server setup (passwords from 1Password automatically)
 ansible-playbook playbooks/site.yml
 
-# Target specific distribution group  
+# Target specific distribution group
 ansible-playbook playbooks/site.yml --limit debian_servers
 ansible-playbook playbooks/site.yml --limit arch_servers
 
@@ -86,6 +86,24 @@ ansible-playbook playbooks/site.yml --limit hostname
 
 # Dry run with diff
 ansible-playbook playbooks/site.yml --check --diff --limit hostname
+```
+
+### SSH Security Hardening
+
+```bash
+# Harden SSH for production-ready servers (run AFTER site.yml)
+ansible-playbook playbooks/ssh-hardening.yml --limit hostname
+
+# Dry run to review changes first (RECOMMENDED)
+ansible-playbook playbooks/ssh-hardening.yml --check --diff --limit hostname
+
+# Harden multiple servers
+ansible-playbook playbooks/ssh-hardening.yml --limit "server1,server2,server3"
+
+# Emergency: restore SSH config from backup
+# ssh root@hostname  # Use Tailscale SSH or console access
+# cp /etc/ssh/sshd_config.backup.* /etc/ssh/sshd_config
+# systemctl restart ssh  # or sshd on Arch
 ```
 
 ### Vault Management
@@ -219,6 +237,16 @@ ansible-playbook playbooks/debian-upgrade.yml          # Actual upgrade
 - **Common configuration**: Enables tailscaled service, configures network with auth key, enables SSH access
 - **Security**: Uses vault variable `vault_tailscale_auth_key` for authentication
 - **Features**: Auto-accepts routes, enables Tailscale SSH for secure remote access
+
+### ssh-hardening
+
+- **Role-based separation**: Uses distribution-specific task files (`Debian.yml`, `Archlinux.yml`)
+- **Security focus**: Separate playbook for production-ready servers with proven SSH key access
+- **SSH configuration**: Disables password authentication, root login, forces public key only
+- **Safety features**: Validates existing SSH key access before applying hardening, backs up config files
+- **Distribution-specific**: Handles different SSH service names (`ssh` vs `sshd`) and restart procedures
+- **Tailscale compatibility**: Preserves Tailscale SSH functionality (operates independently of OpenSSH)
+- **Emergency recovery**: Creates timestamped backups for manual restoration if needed
 
 ## Development Workflow
 

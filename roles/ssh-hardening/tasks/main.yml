@@ -1,0 +1,32 @@
+---
+- name: Validate current SSH connection before hardening
+  ping:
+  tags: [ssh-hardening, validation]
+
+- name: Check if deploy user has SSH key access
+  stat:
+    path: "/home/{{ deploy_user }}/.ssh/authorized_keys"
+  register: deploy_ssh_keys
+  tags: [ssh-hardening, validation]
+
+- name: Check if target user has SSH key access
+  stat:
+    path: "/home/{{ server_user }}/.ssh/authorized_keys"
+  register: target_ssh_keys
+  tags: [ssh-hardening, validation]
+
+- name: Fail if deploy user doesn't have SSH keys configured
+  fail:
+    msg: "Deploy user {{ deploy_user }} must have SSH keys configured before hardening"
+  when: not deploy_ssh_keys.stat.exists
+  tags: [ssh-hardening, validation]
+
+- name: Warn if target user doesn't have SSH keys configured
+  debug:
+    msg: "Warning: Target user {{ server_user }} doesn't have SSH keys configured. This user will not be able to log in after hardening."
+  when: not target_ssh_keys.stat.exists
+  tags: [ssh-hardening, validation]
+
+- name: Include distribution-specific SSH hardening tasks
+  include_tasks: "{{ ansible_os_family }}.yml"
+  tags: [ssh-hardening, security]
