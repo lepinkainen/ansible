@@ -8,7 +8,7 @@ This Ansible project automates Debian 13 and Arch Linux server provisioning with
 
 **Distribution Support**: Supports both Debian-based and Arch Linux systems through group-based inventory organization with shared common configuration and distribution-specific overrides.
 
-**Current Roles**: system-basics, packages, user-management, motd-config, mail-config, unattended-upgrades, docker
+**Current Roles**: system-basics, packages, user-management, motd-config, mail-config, unattended-upgrades, tailscale, docker
 
 ## Critical Architecture Details
 
@@ -47,13 +47,15 @@ inventory/
 **Architecture Pattern**: Group-based inventory with variable layering for clean multi-distribution support.
 
 **Variable Precedence** (Ansible's standard precedence applies):
+
 1. `group_vars/all/config.yml` - Common configuration shared across all distributions
 2. `group_vars/{distribution_group}/config.yml` - Distribution-specific overrides and additions  
 3. `group_vars/{distribution_group}/main.yml` - Merges sensitive vault variables with config
 4. `host_vars/{hostname}/config.yml` - Host-specific overrides (optional)
 
 **Key Distribution Variables**:
-- `package_manager`: "apt" (Debian) or "pacman" (Arch) 
+
+- `package_manager`: "apt" (Debian) or "pacman" (Arch)
 - `motd_path`: "/etc/update-motd.d" (Debian) or "/etc/profile.d" (Arch)
 - `user_groups`: ["sudo"] (Debian) or ["wheel"] (Arch)
 - `common_packages`: Shared across distributions (defined in all/config.yml)
@@ -102,6 +104,30 @@ ansible-vault edit inventory/host_vars/hostname/vault.yml
 ./scripts/encrypt-vault-files.sh --dry-run
 ```
 
+### Debian Version Management
+
+```bash
+# Check current Debian versions across all servers
+ansible-playbook playbooks/debian-version-check.yml
+
+# Upgrade specific server to Trixie (Debian 13)
+ansible-playbook playbooks/debian-upgrade.yml --limit hostname --check  # Dry run first
+ansible-playbook playbooks/debian-upgrade.yml --limit hostname          # Actual upgrade
+
+# Upgrade all Debian servers that need it (use with caution)
+ansible-playbook playbooks/debian-upgrade.yml --check  # Review changes first
+ansible-playbook playbooks/debian-upgrade.yml          # Actual upgrade
+```
+
+**Version Management Best Practices**:
+
+- Always run version check first to identify servers needing updates
+- Use `--check` mode to preview changes before actual upgrades
+- Upgrade one server at a time (playbook uses `serial: 1` for safety)
+- Test on `longshot` (test VM) before production servers
+- Ensure backups and console access before major upgrades
+- All roles now use dynamic variables (`ansible_distribution_release`) instead of hardcoded versions
+
 ## Variable Architecture
 
 ### Sensitive (Encrypted in vault.yml)
@@ -113,10 +139,12 @@ ansible-vault edit inventory/host_vars/hostname/vault.yml
 - `vault_notification_email`: Admin email address
 - `vault_discord_url`: Discord webhook URL for mailrise notifications (host-specific in host_vars/)
 - `vault_user_ssh_key`: SSH public key for the human user account (optional)
+- `vault_tailscale_auth_key`: Tailscale authentication key for network setup (optional)
 
 ### Non-Sensitive (Plain text in config.yml)
 
 **Common variables** (defined in `group_vars/all/config.yml`):
+
 - `timezone`: Server timezone (default: Europe/Helsinki)
 - `locales`: System locales (default: en_US.UTF-8, en_GB.UTF-8)
 - `common_packages`: Packages shared across all distributions
@@ -125,8 +153,10 @@ ansible-vault edit inventory/host_vars/hostname/vault.yml
 - `auto_reboot_config.*`: Common reboot settings
 - `disk_usage_locations`: Array of mount points to monitor (default: ['/'])
 - `mail_config.enable_mailrise`: Boolean to control mailrise service
+- `tailscale_config.enabled`: Boolean to enable Tailscale setup (default: false)
 
 **Distribution-specific variables** (defined in `group_vars/{distribution}/config.yml`):
+
 - `package_manager`: "apt" (Debian) or "pacman" (Arch)
 - `motd_path`: Distribution-specific MOTD directory
 - `core_packages`: Distribution-specific packages (merged with common_packages)
@@ -180,6 +210,16 @@ ansible-vault edit inventory/host_vars/hostname/vault.yml
 - **Distribution-specific**: Deploy user group assignment (sudo vs wheel)
 - **Variable-driven**: Uses `user_groups` from group_vars instead of hardcoded conditions
 
+### tailscale
+
+- **Role-based separation**: Uses distribution-specific task files (`Debian.yml`, `Archlinux.yml`)
+- **Conditional deployment**: Only runs when `tailscale_config.enabled` is true (default: false)
+- **Debian approach**: Adds official Tailscale repository with GPG key verification, installs from official repo
+- **Arch approach**: Installs from standard pacman repositories
+- **Common configuration**: Enables tailscaled service, configures network with auth key, enables SSH access
+- **Security**: Uses vault variable `vault_tailscale_auth_key` for authentication
+- **Features**: Auto-accepts routes, enables Tailscale SSH for secure remote access
+
 ## Development Workflow
 
 ### Adding New Servers
@@ -225,13 +265,14 @@ ansible debian_servers -m ping
 
 This project follows the `llm-shared` submodule standards:
 
-- **Shell tools**: Use modern alternatives (`rg` instead of `grep`, `fd` instead of `find`) 
+- **Shell tools**: Use modern alternatives (`rg` instead of `grep`, `fd` instead of `find`)
 - **Git hooks**: Located in `scripts/hooks/` (enabled via `git config core.hooksPath scripts/hooks`)
 - **Development workflow**: Feature branches preferred over direct main commits
 - **Project guidelines**: See `llm-shared/project_tech_stack.md` for universal practices
 
 **AI Assistant Guidelines**:
-- Use `rg` for searching instead of `grep` or `find` 
+
+- Use `rg` for searching instead of `grep` or `find`
 - Follow the modernized role architecture pattern (`include_tasks: "{{ ansible_os_family }}.yml"`)
 - Always test changes with `--check --diff` before real deployment
 - Use generic `package` module instead of distribution-specific ones where possible
@@ -273,5 +314,5 @@ This project follows the `llm-shared` submodule standards:
 - **After changes**: Run `./scripts/encrypt-vault-files.sh` to bulk encrypt
 - **Check status**: `./scripts/encrypt-vault-files.sh --dry-run`
 - Always use the `longshot` server for testing, it's a virtual machine with no permanent data
-- Always use the current debian stable version for Debian servers - Current codename is bullseye as of September 2025
+- Always use the current debian stable version for Debian servers - Current codename is trixie as of September 2025
 - Never use `ansible-vault edit` to modify vault files. Use `ansible-vault decrypt` instead
