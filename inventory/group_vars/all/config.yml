@@ -26,7 +26,6 @@ common_packages:
   - bat
   - neovim
   - atuin
-  - ack
   - eza
   - direnv
   - httpie
@@ -64,4 +63,4 @@ auto_reboot_config:
 
 # Tailscale Configuration (non-sensitive)
 tailscale_config:
-  enabled: false  # Set to true in group_vars to enable tailscale on server groups
+  enabled: false # Set to true in group_vars to enable tailscale on server groups
