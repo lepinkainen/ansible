@@ -1,0 +1,71 @@
+---
+- name: Audit Debian versions across all servers
+  hosts: debian_servers
+  gather_facts: true
+  become: false
+
+  tasks:
+    - name: Gather Debian version information
+      setup:
+        filter: ansible_distribution*
+      register: system_info
+
+    - name: Read /etc/debian_version for detailed version info
+      slurp:
+        src: /etc/debian_version
+      register: debian_version_file
+
+    - name: Get codename from lsb_release
+      command: lsb_release -sc
+      register: debian_codename
+      changed_when: false
+
+    - name: Display current Debian version information
+      debug:
+        msg:
+          - "Host: {{ inventory_hostname }}"
+          - "Distribution: {{ ansible_distribution }}"
+          - "Distribution Version: {{ ansible_distribution_version }}"
+          - "Distribution Release: {{ ansible_distribution_release }}"
+          - "Distribution Major Version: {{ ansible_distribution_major_version }}"
+          - "Codename: {{ debian_codename.stdout }}"
+          - "Debian Version File: {{ (debian_version_file.content | b64decode).strip() }}"
+          - "Target: Trixie (Debian 13)"
+          - "Needs Upgrade: {{ debian_codename.stdout != 'trixie' }}"
+
+    - name: Collect version summary for reporting
+      set_fact:
+        version_summary:
+          hostname: "{{ inventory_hostname }}"
+          current_codename: "{{ debian_codename.stdout }}"
+          current_version: "{{ ansible_distribution_version }}"
+          debian_version_file: "{{ (debian_version_file.content | b64decode).strip() }}"
+          needs_upgrade: "{{ debian_codename.stdout != 'trixie' }}"
+
+    - name: Add to upgrade list if needed
+      add_host:
+        name: "{{ inventory_hostname }}"
+        groups: needs_debian_upgrade
+      when: debian_codename.stdout != 'trixie'
+
+- name: Generate upgrade summary
+  hosts: localhost
+  gather_facts: false
+  run_once: true
+
+  tasks:
+    - name: Display servers needing upgrade
+      debug:
+        msg:
+          - "=== DEBIAN VERSION AUDIT SUMMARY ==="
+          - ""
+          - "Servers needing upgrade to Trixie:"
+          - "{{ groups['needs_debian_upgrade'] | default([]) }}"
+          - ""
+          - "Total servers checked: {{ groups['debian_servers'] | length }}"
+          - "Servers needing upgrade: {{ groups['needs_debian_upgrade'] | default([]) | length }}"
+          - ""
+          - "Next steps if upgrades needed:"
+          - "1. Run: ansible-playbook playbooks/debian-upgrade.yml --limit <hostname> --check"
+          - "2. Review the changes carefully"
+          - "3. Run actual upgrade: ansible-playbook playbooks/debian-upgrade.yml --limit <hostname>"
