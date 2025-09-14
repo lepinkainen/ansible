@@ -1,0 +1,11 @@
+---
+- name: Update package cache
+  pacman:
+    update_cache: yes
+  tags: [tailscale, packages, system]
+
+- name: Install tailscale
+  package:
+    name: tailscale
+    state: present
+  tags: [tailscale, packages]

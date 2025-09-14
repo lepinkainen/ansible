@@ -270,3 +270,5 @@ This project follows the `llm-shared` submodule standards:
 - **Before editing**: Files auto-decrypt via ansible.cfg password scripts
 - **After changes**: Run `./scripts/encrypt-vault-files.sh` to bulk encrypt
 - **Check status**: `./scripts/encrypt-vault-files.sh --dry-run`
+- Always use the `longshot` server for testing, it's a virtual machine with no permanent data
+- Always use the current debian stable version for Debian servers - Current codename is bullseye as of September 2025

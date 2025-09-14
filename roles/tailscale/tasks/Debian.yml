@@ -1,0 +1,23 @@
+---
+- name: Add tailscale repository with GPG key
+  deb822_repository:
+    name: tailscale
+    types: [deb]
+    uris: "https://pkgs.tailscale.com/stable/debian"
+    suites: [bullseye]
+    components: [main]
+    signed_by: https://pkgs.tailscale.com/stable/debian/bullseye.noarmor.gpg
+    state: present
+    enabled: true
+  tags: [tailscale, packages, system]
+
+- name: Update package cache after adding tailscale repository
+  apt:
+    update_cache: yes
+  tags: [tailscale, packages, system]
+
+- name: Install tailscale
+  package:
+    name: tailscale
+    state: present
+  tags: [tailscale, packages]

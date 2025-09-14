@@ -10,3 +10,6 @@ disk_usage_locations:
 # Mail configuration - disable mailrise for this host
 mail_config:
   enable_mailrise: false
+
+tailscale_config:
+  enabled: false

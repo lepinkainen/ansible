@@ -1,0 +1,45 @@
+---
+# Distribution-specific tailscale installation
+- name: Include distribution-specific tasks
+  include_tasks: "{{ ansible_os_family }}.yml"
+  when: tailscale_config.enabled | default(false)
+  tags: [tailscale, packages, system]
+
+# Common tasks for all distributions
+- name: Enable and start tailscaled service
+  systemd:
+    name: tailscaled
+    enabled: yes
+    state: started
+  tags: [tailscale, system, service]
+  when: tailscale_config.enabled | default(false)
+
+- name: Check tailscale status
+  command: tailscale status
+  register: tailscale_status_check
+  changed_when: false
+  failed_when: false
+  become: true
+  tags: [tailscale, network, config]
+  when: tailscale_config.enabled | default(false)
+
+- name: Configure tailscale network
+  command: timeout 60 tailscale up --authkey={{ vault_tailscale_auth_key }} --accept-routes --timeout=30s
+  register: tailscale_up_result
+  changed_when: "'Success.' in tailscale_up_result.stderr or 'Success.' in tailscale_up_result.stdout"
+  failed_when: tailscale_up_result.rc != 0 and 'already logged in' not in tailscale_up_result.stderr and 'timeout' not in tailscale_up_result.stderr
+  tags: [tailscale, network, config]
+  become: true
+  when:
+    - tailscale_config.enabled | default(false)
+    - vault_tailscale_auth_key is defined
+    - tailscale_status_check.rc != 0 or 'Logged out' in tailscale_status_check.stdout
+
+- name: Enable tailscale SSH
+  command: tailscale set --ssh
+  register: tailscale_ssh_result
+  changed_when: tailscale_ssh_result.rc == 0
+  failed_when: tailscale_ssh_result.rc != 0
+  tags: [tailscale, ssh, security]
+  become: true
+  when: tailscale_config.enabled | default(false)

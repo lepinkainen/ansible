@@ -8,5 +8,5 @@ hostname: "{{ vault_hostname }}"
 disk_usage_locations:
   - "/"
 # Mail configuration override (if mailrise not needed)
-# mail_config:
-#   enable_mailrise: false
+mail_config:
+  enable_mailrise: false

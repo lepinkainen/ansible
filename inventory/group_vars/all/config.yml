@@ -61,3 +61,7 @@ disk_usage_locations:
 auto_reboot_config:
   automatic_reboot: true
   automatic_reboot_time: "02:00"
+
+# Tailscale Configuration (non-sensitive)
+tailscale_config:
+  enabled: false  # Set to true in group_vars to enable tailscale on server groups
