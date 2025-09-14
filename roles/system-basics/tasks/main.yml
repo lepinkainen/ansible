@@ -32,6 +32,8 @@
   when: ansible_virtualization_type in ['qemu', 'kvm']
   tags: [system-basics, system, virtualization]
 
-# Distribution-specific system basics tasks
-- name: Include distribution-specific tasks
-  include_tasks: "{{ ansible_os_family }}.yml"
+- name: Update package cache
+  package:
+    update_cache: yes
+    cache_valid_time: 3600
+  tags: [system-basics, system]
