@@ -35,11 +35,23 @@
     - vault_tailscale_auth_key is defined
     - tailscale_status_check.rc != 0 or 'Logged out' in tailscale_status_check.stdout
 
+- name: Check if tailscale SSH is already enabled
+  command: tailscale status --json
+  register: tailscale_ssh_status_check
+  changed_when: false
+  failed_when: false
+  become: true
+  tags: [tailscale, ssh, security]
+  when: tailscale_config.enabled | default(false)
+
 - name: Enable tailscale SSH
-  command: tailscale set --ssh
+  command: timeout 30 tailscale set --ssh
   register: tailscale_ssh_result
   changed_when: tailscale_ssh_result.rc == 0
-  failed_when: tailscale_ssh_result.rc != 0
+  failed_when: tailscale_ssh_result.rc != 0 and 'already enabled' not in tailscale_ssh_result.stderr and 'timeout' not in tailscale_ssh_result.stderr
   tags: [tailscale, ssh, security]
   become: true
-  when: tailscale_config.enabled | default(false)
+  when:
+    - tailscale_config.enabled | default(false)
+    - tailscale_status_check.rc == 0
+    - "tailscale_ssh_status_check.rc != 0 or 'sshHostKeys' not in tailscale_ssh_status_check.stdout"
