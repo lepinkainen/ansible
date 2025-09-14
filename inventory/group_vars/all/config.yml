@@ -31,6 +31,8 @@ common_packages:
   - httpie
   - wget
   - zoxide
+  - python3
+  - git
 
 # User Configuration
 user_shell: "/usr/bin/fish"
