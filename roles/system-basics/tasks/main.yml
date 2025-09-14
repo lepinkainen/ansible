@@ -32,6 +32,15 @@
   when: ansible_virtualization_type in ['qemu', 'kvm']
   tags: [system-basics, system, virtualization]
 
+- name: Enable MOTD display in SSH
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PrintMotd'
+    line: 'PrintMotd yes'
+    backup: yes
+  notify: restart sshd
+  tags: [system-basics, system, config]
+
 - name: Update package cache
   package:
     update_cache: yes
