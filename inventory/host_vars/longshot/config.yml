@@ -1,2 +1,2 @@
 tailscale_config:
-  enabled: false
+  enabled: true

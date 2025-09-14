@@ -2,4 +2,4 @@
 mail_config:
   enable_mailrise: true
 tailscale_config:
-  enabled: false
+  enabled: true

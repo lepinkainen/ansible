@@ -10,3 +10,5 @@ disk_usage_locations:
 # Mail configuration override (if mailrise not needed)
 mail_config:
   enable_mailrise: false
+tailscale_config:
+  enabled: true

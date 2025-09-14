@@ -107,10 +107,12 @@ ansible-vault edit inventory/host_vars/hostname/vault.yml
 ### Sensitive (Encrypted in vault.yml)
 
 - `vault_hostname`: Server hostname (host-specific in host_vars/)
-- `vault_target_user`: Deployment user (usually "deploy")  
+- `vault_target_user`: Human user account (the actual person using the machine)
+- `vault_deploy_user`: Deployment user for Ansible automation (usually "deploy")
 - `vault_smtp_host`: SMTP server with port
 - `vault_notification_email`: Admin email address
 - `vault_discord_url`: Discord webhook URL for mailrise notifications (host-specific in host_vars/)
+- `vault_user_ssh_key`: SSH public key for the human user account (optional)
 
 ### Non-Sensitive (Plain text in config.yml)
 
@@ -272,3 +274,4 @@ This project follows the `llm-shared` submodule standards:
 - **Check status**: `./scripts/encrypt-vault-files.sh --dry-run`
 - Always use the `longshot` server for testing, it's a virtual machine with no permanent data
 - Always use the current debian stable version for Debian servers - Current codename is bullseye as of September 2025
+- Never use `ansible-vault edit` to modify vault files. Use `ansible-vault decrypt` instead

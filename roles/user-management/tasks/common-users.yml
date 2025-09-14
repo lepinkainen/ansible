@@ -26,6 +26,14 @@
   when: server_user != "root"
   tags: [user-management, user, config]
 
+- name: Add SSH public key for server user
+  authorized_key:
+    user: "{{ server_user }}"
+    state: present
+    key: "{{ vault_user_ssh_key }}"
+  when: server_user != "root" and vault_user_ssh_key is defined
+  tags: [user-management, user, ssh, config]
+
 - name: Install fisher for fish shell
   shell: |
     sudo -u "{{ server_user }}" -H bash -c 'curl -sL https://git.io/fisher | fish -c "source; and fisher install jorgebucaran/fisher"'
