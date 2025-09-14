@@ -4,9 +4,9 @@
     name: tailscale
     types: [deb]
     uris: "https://pkgs.tailscale.com/stable/debian"
-    suites: [bullseye]
+    suites: ["{{ ansible_distribution_release }}"]
     components: [main]
-    signed_by: https://pkgs.tailscale.com/stable/debian/bullseye.noarmor.gpg
+    signed_by: "https://pkgs.tailscale.com/stable/debian/{{ ansible_distribution_release }}.noarmor.gpg"
     state: present
     enabled: true
   tags: [tailscale, packages, system]
