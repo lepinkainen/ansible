@@ -25,6 +25,12 @@
     name: "{{ timezone }}"
   tags: [system-basics, system, config]
 
+- name: Install QEMU guest agent on virtual machines
+  package:
+    name: qemu-guest-agent
+    state: present
+  when: ansible_virtualization_type in ['qemu', 'kvm']
+  tags: [system-basics, system, virtualization]
 
 # Distribution-specific system basics tasks
 - name: Include distribution-specific tasks
