@@ -9,24 +9,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VAULT_FILE="$SCRIPT_DIR/../inventory/group_vars/all/vault.yml"
 SSH_KEY_ITEM="1P SSH key"
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
-# Function to print colored output
-print_status() {
-    echo -e "${GREEN}[INFO]${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
+# Styled output functions using gum
+print_status() { gum style --foreground="#89b4fa" "ℹ️  $1"; }
+print_warning() { gum style --foreground="#f9e2af" "⚠️  $1"; }
+print_error() { gum style --foreground="#f38ba8" "❌ $1"; }
+print_success() { gum style --foreground="#a6e3a1" "✅ $1"; }
+print_header() { gum style --border="rounded" --padding="1 2" --margin="1 0" --foreground="#cba6f7" "$1"; }
 
 # Check if 1Password CLI is available and authenticated
 if ! command -v op &> /dev/null; then
@@ -46,18 +34,18 @@ if [[ ! -f "$VAULT_FILE" ]]; then
     exit 1
 fi
 
+print_header "🔑 SSH Key Update Process"
+
 print_status "Retrieving SSH public key from 1Password..."
 
 # Get the SSH public key from 1Password
-SSH_PUBLIC_KEY=$(op item get "$SSH_KEY_ITEM" --fields "public key" 2>/dev/null)
-
-if [[ -z "$SSH_PUBLIC_KEY" ]]; then
+if SSH_PUBLIC_KEY=$(op item get "$SSH_KEY_ITEM" --fields "public key" 2>/dev/null) && [[ -n "$SSH_PUBLIC_KEY" ]]; then
+    gum style --foreground="#a6e3a1" "✅ Retrieved SSH key: $(echo "$SSH_PUBLIC_KEY" | cut -c1-50)..."
+else
     print_error "Could not retrieve SSH public key from 1Password item '$SSH_KEY_ITEM'"
     print_error "Make sure the item exists and has a 'public key' field"
     exit 1
 fi
-
-print_status "Retrieved SSH key: ${SSH_PUBLIC_KEY:0:50}..."
 
 # Create a temporary file for the decrypted vault
 TEMP_VAULT=$(mktemp)
@@ -99,5 +87,12 @@ if ! ansible-vault encrypt "$TEMP_VAULT" --output="$VAULT_FILE" 2>/dev/null; the
     exit 1
 fi
 
-print_status "SSH key successfully updated in vault file!"
-print_warning "Remember to commit your changes: git add $VAULT_FILE && git commit -m 'chore: update SSH key from 1Password'"
+print_success "SSH key successfully updated in vault file!"
+echo
+print_header "📝 Next Steps"
+gum style --margin="0 2" "• Review the changes: git diff $VAULT_FILE"
+gum style --margin="0 2" "• Commit the changes: git add $VAULT_FILE && git commit -m 'chore: update SSH key from 1Password'"
+echo
+if gum confirm "Would you like to view the diff now?"; then
+    git diff "$VAULT_FILE" || true
+fi
