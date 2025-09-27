@@ -1,0 +1,22 @@
+---
+galaxy_info:
+  author: Shrike
+  description: Validation role for server health checks and configuration verification
+  company: Personal Infrastructure
+  license: MIT
+  min_ansible_version: "2.9"
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+        - trixie
+    - name: ArchLinux
+      versions:
+        - any
+  galaxy_tags:
+    - validation
+    - monitoring
+    - health-check
+    - verification
+
+dependencies: []

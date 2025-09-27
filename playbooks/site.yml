@@ -11,6 +11,9 @@
     - mail-config
     - unattended-upgrades
     - tailscale
+    - docker
+    - role: validation
+      tags: ['validation']
 
   post_tasks:
     - name: Display setup completion message

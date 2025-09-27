@@ -66,3 +66,12 @@ auto_reboot_config:
 # Tailscale Configuration (non-sensitive)
 tailscale_config:
   enabled: false # Set to true in group_vars to enable tailscale on server groups
+
+# Validation Configuration (non-sensitive)
+validation_config:
+  enabled: true
+  fail_fast: false              # Continue on validation failures
+  docker_smoke_test: true       # Run docker hello-world
+  mail_connectivity_test: true  # Test mail/Discord connectivity
+  detailed_output: false        # Show detailed check results
+  timeout_seconds: 30           # Per-check timeout

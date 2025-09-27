@@ -1,0 +1,53 @@
+---
+# Validation role - Health checks for deployed services
+# Follows modernized architecture pattern with distribution dispatch
+
+- name: Initialize validation results
+  set_fact:
+    validation_results: {}
+  tags: ['validation']
+
+- name: Run common system validations
+  include_tasks: common-system.yml
+  tags: ['validation', 'validation:system']
+
+- name: Run distribution-specific validations
+  include_tasks: "{{ ansible_os_family }}.yml"
+  tags: ['validation', 'validation:distribution']
+
+- name: Run Docker validation
+  include_tasks: docker-validation.yml
+  when: validation_config.enabled | default(true)
+  tags: ['validation', 'validation:docker']
+
+- name: Run mail validation
+  include_tasks: mail-validation.yml
+  when: validation_config.enabled | default(true)
+  tags: ['validation', 'validation:mail']
+
+- name: Run network/Tailscale validation
+  include_tasks: network-validation.yml
+  when: validation_config.enabled | default(true)
+  tags: ['validation', 'validation:network']
+
+- name: Display validation summary
+  debug:
+    msg:
+      - "=========================================="
+      - "        VALIDATION SUMMARY"
+      - "=========================================="
+      - "System:    {{ validation_results.system | default('❌ NOT RUN') }}"
+      - "Docker:    {{ validation_results.docker | default('❌ NOT RUN') }}"
+      - "Mail:      {{ validation_results.mail | default('❌ NOT RUN') }}"
+      - "Network:   {{ validation_results.network | default('❌ NOT RUN') }}"
+      - "Security:  {{ validation_results.security | default('❌ NOT RUN') }}"
+      - "=========================================="
+  tags: ['validation']
+
+- name: Check for validation failures
+  fail:
+    msg: "One or more validations failed. Check output above for details."
+  when:
+    - validation_config.fail_fast | default(false)
+    - validation_results.values() | select('search', '❌') | list | length > 0
+  tags: ['validation']

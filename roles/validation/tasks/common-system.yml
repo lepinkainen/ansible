@@ -1,0 +1,105 @@
+---
+# Common system validations across all distributions
+
+- name: Validate hostname configuration
+  block:
+    - name: Check current hostname
+      command: hostname
+      register: current_hostname
+      changed_when: false
+
+    - name: Verify hostname matches configuration
+      set_fact:
+        hostname_status: "✅ PASS"
+      when: current_hostname.stdout == vault_hostname
+
+    - name: Mark hostname validation failure
+      set_fact:
+        hostname_status: "❌ FAIL (expected: {{ vault_hostname }}, actual: {{ current_hostname.stdout }})"
+      when: current_hostname.stdout != vault_hostname
+
+    - name: Update validation results - hostname
+      set_fact:
+        validation_results: "{{ validation_results | combine({'hostname': hostname_status}) }}"
+
+  rescue:
+    - name: Mark hostname validation error
+      set_fact:
+        validation_results: "{{ validation_results | combine({'hostname': '❌ ERROR'}) }}"
+
+- name: Validate timezone configuration
+  block:
+    - name: Check current timezone
+      command: timedatectl show --property=Timezone --value
+      register: current_timezone
+      changed_when: false
+
+    - name: Verify timezone matches configuration
+      set_fact:
+        timezone_status: "✅ PASS"
+      when: current_timezone.stdout == timezone
+
+    - name: Mark timezone validation failure
+      set_fact:
+        timezone_status: "❌ FAIL (expected: {{ timezone }}, actual: {{ current_timezone.stdout }})"
+      when: current_timezone.stdout != timezone
+
+    - name: Update validation results - timezone
+      set_fact:
+        validation_results: "{{ validation_results | combine({'timezone': timezone_status}) }}"
+
+  rescue:
+    - name: Mark timezone validation error
+      set_fact:
+        validation_results: "{{ validation_results | combine({'timezone': '❌ ERROR'}) }}"
+
+- name: Validate user accounts
+  block:
+    - name: Check target user exists
+      user:
+        name: "{{ vault_target_user }}"
+        state: present
+      check_mode: true
+      register: target_user_check
+      failed_when: false
+
+    - name: Check deploy user exists
+      user:
+        name: "{{ vault_deploy_user }}"
+        state: present
+      check_mode: true
+      register: deploy_user_check
+      failed_when: false
+
+    - name: Verify user accounts exist
+      set_fact:
+        users_status: "✅ PASS"
+      when:
+        - target_user_check is not changed
+        - deploy_user_check is not changed
+
+    - name: Mark user validation failure
+      set_fact:
+        users_status: "❌ FAIL (target_user: {{ 'missing' if target_user_check is changed else 'ok' }}, deploy_user: {{ 'missing' if deploy_user_check is changed else 'ok' }})"
+      when: target_user_check is changed or deploy_user_check is changed
+
+    - name: Update validation results - users
+      set_fact:
+        validation_results: "{{ validation_results | combine({'users': users_status}) }}"
+
+  rescue:
+    - name: Mark user validation error
+      set_fact:
+        validation_results: "{{ validation_results | combine({'users': '❌ ERROR'}) }}"
+
+- name: Consolidate system validation results
+  set_fact:
+    validation_results: "{{ validation_results | combine({'system': system_overall_status}) }}"
+  vars:
+    system_checks:
+      - "{{ validation_results.hostname | default('❌ ERROR') }}"
+      - "{{ validation_results.timezone | default('❌ ERROR') }}"
+      - "{{ validation_results.users | default('❌ ERROR') }}"
+    system_overall_status: >-
+      {%- set failures = system_checks | select('search', '❌') | list -%}
+      {%- if failures | length == 0 -%}✅ PASS{%- else -%}❌ FAIL{%- endif -%}

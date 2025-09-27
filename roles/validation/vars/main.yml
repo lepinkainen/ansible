@@ -1,0 +1,11 @@
+---
+# Default validation settings
+# These can be overridden in group_vars or host_vars
+
+validation_config:
+  enabled: true
+  fail_fast: false
+  docker_smoke_test: true
+  mail_connectivity_test: true
+  detailed_output: false
+  timeout_seconds: 30
