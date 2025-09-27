@@ -13,6 +13,7 @@ Quick setup guide for running playbooks on Debian 13 (Trixie) and Arch Linux ser
 Create a dedicated `deploy` user for Ansible operations:
 
 **For Debian servers:**
+
 ```bash
 # On the Debian server as root or existing sudo user
 apt update && apt install sudo
@@ -30,6 +31,7 @@ sudo whoami  # Should return 'root'
 ```
 
 **For Arch Linux servers:**
+
 ```bash
 # On the Arch server as root
 pacman -Syu sudo
@@ -198,6 +200,7 @@ Edit configuration files to customize settings:
 - `inventory/host_vars/hostname/config.yml` - Host-specific non-sensitive settings
 
 Common customizations include:
+
 - Timezone and locales
 - Package lists (common and distribution-specific)
 - User shell and groups
