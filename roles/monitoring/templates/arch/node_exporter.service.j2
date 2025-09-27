@@ -1,0 +1,20 @@
+[Service]
+# Override default ExecStart to bind to Tailscale interface
+ExecStart=
+ExecStart=/usr/bin/prometheus-node-exporter \
+    --web.listen-address={{ ansible_tailscale0.ipv4.address | default('127.0.0.1') }}:{{ monitoring_config.node_exporter.port | default(9100) }} \
+{% if monitoring_config.node_exporter.collect_systemd | default(true) %}
+    --collector.systemd \
+{% endif %}
+    --path.rootfs=/
+
+# Security settings
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=
+ReadOnlyPaths=/
+
+# Restart policy
+Restart=always
+RestartSec=5s

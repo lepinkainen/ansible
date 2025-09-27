@@ -12,6 +12,7 @@ core_packages:
   - ssmtp
   - fd-find
   - pinentry-tty
+  - prometheus-node-exporter
 
 # User Configuration - Debian uses sudo group
 user_groups:

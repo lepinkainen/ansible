@@ -1,0 +1,19 @@
+---
+# Default configuration for monitoring role
+# These can be overridden in group_vars or host_vars
+
+# Node Exporter Configuration
+monitoring_config:
+  node_exporter:
+    enabled: false
+    port: 9100
+    bind_interface: "tailscale0"
+    collect_systemd: true
+  prometheus:
+    enabled: false
+    port: 9090
+    scrape_interval: "30s"
+
+# Tailscale dependency
+tailscale_config:
+  enabled: false

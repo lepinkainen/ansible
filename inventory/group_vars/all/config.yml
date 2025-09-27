@@ -14,6 +14,7 @@ common_packages:
   - fish
   - mosh
   - tmux
+  - fastfetch
   - fzf
   - rsync
   - btop
@@ -65,13 +66,25 @@ auto_reboot_config:
 
 # Tailscale Configuration (non-sensitive)
 tailscale_config:
-  enabled: false # Set to true in group_vars to enable tailscale on server groups
+  enabled: true # Required for monitoring - enables secure cross-network communication
+
+# Monitoring Configuration (non-sensitive)
+monitoring_config:
+  node_exporter:
+    enabled: true # Enable by default for all servers
+    port: 9100
+    bind_interface: "tailscale0"
+    collect_systemd: true
+  prometheus:
+    enabled: false # Only on designated server
+    port: 9090
+    scrape_interval: "30s"
 
 # Validation Configuration (non-sensitive)
 validation_config:
   enabled: true
-  fail_fast: false              # Continue on validation failures
-  docker_smoke_test: true       # Run docker hello-world
-  mail_connectivity_test: true  # Test mail/Discord connectivity
-  detailed_output: false        # Show detailed check results
-  timeout_seconds: 30           # Per-check timeout
+  fail_fast: false # Continue on validation failures
+  docker_smoke_test: true # Run docker hello-world
+  mail_connectivity_test: true # Test mail/Discord connectivity
+  detailed_output: false # Show detailed check results
+  timeout_seconds: 30 # Per-check timeout

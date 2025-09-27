@@ -12,6 +12,7 @@
     - unattended-upgrades
     - tailscale
     - docker
+    - monitoring
     - role: validation
       tags: ['validation']
 
