@@ -3,6 +3,8 @@
   hosts: debian_servers:arch_servers
   become: true
   gather_facts: true
+  serial: 1
+  any_errors_fatal: true
 
   pre_tasks:
     - name: Display SSH hardening warning
