@@ -1,0 +1,57 @@
+---
+# Reusable service validation helper
+# Parameters:
+#   check_name: Name of the check for reporting
+#   service_name: systemd service to check (optional)
+#   port: Port to check (optional)
+#   host: Host to check port on (default: localhost)
+#   command: Command to run for validation (optional)
+
+- name: "Validate {{ check_name }}"
+  block:
+    - name: "Check {{ check_name }} service status"
+      systemd:
+        name: "{{ service_name }}"
+        state: started
+      check_mode: true
+      register: service_check
+      failed_when: false
+      when: service_name is defined and service_name
+
+    - name: "Check {{ check_name }} port"
+      wait_for:
+        port: "{{ port }}"
+        host: "{{ host | default('localhost') }}"
+        timeout: "{{ timeout | default(5) }}"
+      register: port_check
+      failed_when: false
+      when: port is defined and port
+
+    - name: "Run {{ check_name }} command check"
+      command: "{{ command }}"
+      register: command_check
+      changed_when: false
+      failed_when: false
+      when: command is defined and command
+
+    - name: "Set {{ check_name }} validation result"
+      set_fact:
+        _service_ok: "{{ service_name is not defined or not service_name or service_check is not changed }}"
+        _port_ok: "{{ port is not defined or not port or port_check is succeeded }}"
+        _command_ok: "{{ command is not defined or not command or command_check.rc == 0 }}"
+
+    - name: "Record {{ check_name }} status"
+      set_fact:
+        validation_results: >-
+          {{ validation_results | combine({
+            check_name: '✅ PASS' if (_service_ok and _port_ok and _command_ok) else 
+            '❌ FAIL (' ~ 
+            (('service: stopped, ' if not _service_ok else '') ~
+             ('port: not listening, ' if not _port_ok else '') ~
+             ('command: failed' if not _command_ok else '')) | regex_replace(', $', '') ~ ')'
+          }) }}
+
+  rescue:
+    - name: "Record {{ check_name }} error"
+      set_fact:
+        validation_results: "{{ validation_results | combine({check_name: '❌ ERROR'}) }}"

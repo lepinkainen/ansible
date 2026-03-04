@@ -1,105 +1,69 @@
 ---
-# Common system validations across all distributions
+# Simplified common system validations
 
-- name: Validate hostname configuration
-  block:
-    - name: Check current hostname
-      command: hostname
-      register: current_hostname
-      changed_when: false
+- name: Validate hostname
+  assert:
+    that: ansible_hostname == vault_hostname
+    success_msg: "Hostname matches: {{ ansible_hostname }}"
+    fail_msg: "Hostname mismatch: expected {{ vault_hostname }}, got {{ ansible_hostname }}"
+    quiet: true
+  register: hostname_check
+  ignore_errors: true
 
-    - name: Verify hostname matches configuration
-      set_fact:
-        hostname_status: "✅ PASS"
-      when: current_hostname.stdout == vault_hostname
-
-    - name: Mark hostname validation failure
-      set_fact:
-        hostname_status: "❌ FAIL (expected: {{ vault_hostname }}, actual: {{ current_hostname.stdout }})"
-      when: current_hostname.stdout != vault_hostname
-
-    - name: Update validation results - hostname
-      set_fact:
-        validation_results: "{{ validation_results | combine({'hostname': hostname_status}) }}"
-
-  rescue:
-    - name: Mark hostname validation error
-      set_fact:
-        validation_results: "{{ validation_results | combine({'hostname': '❌ ERROR'}) }}"
-
-- name: Validate timezone configuration
-  block:
-    - name: Check current timezone
-      command: timedatectl show --property=Timezone --value
-      register: current_timezone
-      changed_when: false
-
-    - name: Verify timezone matches configuration
-      set_fact:
-        timezone_status: "✅ PASS"
-      when: current_timezone.stdout == timezone
-
-    - name: Mark timezone validation failure
-      set_fact:
-        timezone_status: "❌ FAIL (expected: {{ timezone }}, actual: {{ current_timezone.stdout }})"
-      when: current_timezone.stdout != timezone
-
-    - name: Update validation results - timezone
-      set_fact:
-        validation_results: "{{ validation_results | combine({'timezone': timezone_status}) }}"
-
-  rescue:
-    - name: Mark timezone validation error
-      set_fact:
-        validation_results: "{{ validation_results | combine({'timezone': '❌ ERROR'}) }}"
-
-- name: Validate user accounts
-  block:
-    - name: Check target user exists
-      user:
-        name: "{{ vault_target_user }}"
-        state: present
-      check_mode: true
-      register: target_user_check
-      failed_when: false
-
-    - name: Check deploy user exists
-      user:
-        name: "{{ vault_deploy_user }}"
-        state: present
-      check_mode: true
-      register: deploy_user_check
-      failed_when: false
-
-    - name: Verify user accounts exist
-      set_fact:
-        users_status: "✅ PASS"
-      when:
-        - target_user_check is not changed
-        - deploy_user_check is not changed
-
-    - name: Mark user validation failure
-      set_fact:
-        users_status: "❌ FAIL (target_user: {{ 'missing' if target_user_check is changed else 'ok' }}, deploy_user: {{ 'missing' if deploy_user_check is changed else 'ok' }})"
-      when: target_user_check is changed or deploy_user_check is changed
-
-    - name: Update validation results - users
-      set_fact:
-        validation_results: "{{ validation_results | combine({'users': users_status}) }}"
-
-  rescue:
-    - name: Mark user validation error
-      set_fact:
-        validation_results: "{{ validation_results | combine({'users': '❌ ERROR'}) }}"
-
-- name: Consolidate system validation results
+- name: Record hostname status
   set_fact:
-    validation_results: "{{ validation_results | combine({'system': system_overall_status}) }}"
-  vars:
-    system_checks:
-      - "{{ validation_results.hostname | default('❌ ERROR') }}"
-      - "{{ validation_results.timezone | default('❌ ERROR') }}"
-      - "{{ validation_results.users | default('❌ ERROR') }}"
-    system_overall_status: >-
-      {%- set failures = system_checks | select('search', '❌') | list -%}
-      {%- if failures | length == 0 -%}✅ PASS{%- else -%}❌ FAIL{%- endif -%}
+    validation_results: >-
+      {{ validation_results | combine({
+        'hostname': '✅ PASS' if hostname_check is succeeded else 
+        '❌ FAIL (expected: ' ~ vault_hostname ~ ', actual: ' ~ ansible_hostname ~ ')'
+      }) }}
+
+- name: Get current timezone
+  command: timedatectl show --property=Timezone --value
+  register: current_timezone
+  changed_when: false
+
+- name: Validate timezone
+  assert:
+    that: current_timezone.stdout == timezone
+    success_msg: "Timezone matches: {{ timezone }}"
+    fail_msg: "Timezone mismatch: expected {{ timezone }}, got {{ current_timezone.stdout }}"
+    quiet: true
+  register: timezone_check
+  ignore_errors: true
+
+- name: Record timezone status
+  set_fact:
+    validation_results: >-
+      {{ validation_results | combine({
+        'timezone': '✅ PASS' if timezone_check is succeeded else 
+        '❌ FAIL (expected: ' ~ timezone ~ ', actual: ' ~ current_timezone.stdout ~ ')'
+      }) }}
+
+- name: Check users exist
+  getent:
+    database: passwd
+    key: "{{ item }}"
+  loop:
+    - "{{ vault_target_user }}"
+    - "{{ vault_deploy_user }}"
+  register: users_check
+  ignore_errors: true
+
+- name: Record users status
+  set_fact:
+    validation_results: >-
+      {{ validation_results | combine({
+        'users': '✅ PASS' if users_check is succeeded else '❌ FAIL (missing users)'
+      }) }}
+
+- name: Consolidate system validation
+  set_fact:
+    validation_results: >-
+      {{ validation_results | combine({
+        'system': '✅ PASS' if (
+          validation_results.hostname is defined and '✅' in validation_results.hostname and
+          validation_results.timezone is defined and '✅' in validation_results.timezone and
+          validation_results.users is defined and '✅' in validation_results.users
+        ) else '❌ FAIL'
+      }) }}

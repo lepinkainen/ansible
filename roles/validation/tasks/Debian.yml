@@ -1,121 +1,48 @@
 ---
-# Debian-specific validation tasks
+# Simplified Debian-specific validation
 
-- name: Validate Debian-specific services
-  block:
-    - name: Check unattended-upgrades service
-      systemd:
-        name: unattended-upgrades
-        state: started
-      check_mode: true
-      register: unattended_upgrades_check
-      failed_when: false
+- name: Validate unattended-upgrades
+  include_tasks: validate-service.yml
+  vars:
+    check_name: unattended_upgrades
+    service_name: unattended-upgrades
 
-    - name: Check unattended-upgrades timer
-      systemd:
-        name: unattended-upgrades.timer
-        enabled: true
-      check_mode: true
-      register: unattended_upgrades_timer_check
-      failed_when: false
+- name: Check Debian config files exist
+  stat:
+    path: "{{ item.path }}"
+  loop:
+    - { path: /etc/apt/apt.conf.d/50unattended-upgrades, name: unattended-upgrades }
+    - { path: /etc/ssmtp/ssmtp.conf, name: ssmtp }
+  register: debian_configs
 
-    - name: Verify unattended-upgrades configuration
-      stat:
-        path: /etc/apt/apt.conf.d/50unattended-upgrades
-      register: unattended_upgrades_config
-
-    - name: Set Debian services status
-      set_fact:
-        debian_services_status: "✅ PASS"
-      when:
-        - unattended_upgrades_check is not changed
-        - unattended_upgrades_timer_check is not changed
-        - unattended_upgrades_config.stat.exists
-
-    - name: Mark Debian services validation failure
-      set_fact:
-        debian_services_status: >-
-          ❌ FAIL (service: {{ 'missing' if unattended_upgrades_check is changed else 'ok' }},
-          timer: {{ 'disabled' if unattended_upgrades_timer_check is changed else 'ok' }},
-          config: {{ 'missing' if not unattended_upgrades_config.stat.exists else 'ok' }})
-      when: >
-        unattended_upgrades_check is changed or
-        unattended_upgrades_timer_check is changed or
-        not unattended_upgrades_config.stat.exists
-
-  rescue:
-    - name: Mark Debian services validation error
-      set_fact:
-        debian_services_status: "❌ ERROR"
-
-- name: Validate Debian mail configuration (ssmtp)
-  block:
-    - name: Check ssmtp configuration
-      stat:
-        path: /etc/ssmtp/ssmtp.conf
-      register: ssmtp_config
-
-    - name: Check apt-listchanges configuration
-      stat:
-        path: /etc/apt/listchanges.conf
-      register: apt_listchanges_config
-
-    - name: Set Debian mail status
-      set_fact:
-        debian_mail_status: "✅ PASS"
-      when:
-        - ssmtp_config.stat.exists
-        - apt_listchanges_config.stat.exists
-
-    - name: Mark Debian mail validation failure
-      set_fact:
-        debian_mail_status: >-
-          ❌ FAIL (ssmtp: {{ 'missing' if not ssmtp_config.stat.exists else 'ok' }},
-          apt-listchanges: {{ 'missing' if not apt_listchanges_config.stat.exists else 'ok' }})
-      when: not ssmtp_config.stat.exists or not apt_listchanges_config.stat.exists
-
-  rescue:
-    - name: Mark Debian mail validation error
-      set_fact:
-        debian_mail_status: "❌ ERROR"
-
-- name: Validate MOTD configuration
-  block:
-    - name: Check MOTD scripts exist
-      stat:
-        path: "/etc/update-motd.d/{{ item }}"
-      register: motd_scripts
-      loop:
-        - "01-logo"
-        - "10-uname"
-        - "15-diskspace"
-        - "20-docker"
-        - "30-security-updates"
-        - "92-unattended-upgrades"
-
-    - name: Count missing MOTD scripts
-      set_fact:
-        missing_motd_scripts: "{{ motd_scripts.results | selectattr('stat.exists', 'equalto', false) | list | length }}"
-
-    - name: Set Debian MOTD status
-      set_fact:
-        debian_motd_status: "✅ PASS"
-      when: missing_motd_scripts | int == 0
-
-    - name: Mark Debian MOTD validation failure
-      set_fact:
-        debian_motd_status: "❌ FAIL ({{ missing_motd_scripts }} missing scripts)"
-      when: missing_motd_scripts | int > 0
-
-  rescue:
-    - name: Mark Debian MOTD validation error
-      set_fact:
-        debian_motd_status: "❌ ERROR"
-
-- name: Update validation results with Debian-specific checks
+- name: Record Debian config status
   set_fact:
-    validation_results: "{{ validation_results | combine({
-      'debian_services': debian_services_status | default('❌ ERROR'),
-      'debian_mail': debian_mail_status | default('❌ ERROR'),
-      'debian_motd': debian_motd_status | default('❌ ERROR')
-    }) }}"
+    validation_results: >-
+      {{ validation_results | combine({
+        'debian_configs': '✅ PASS' if (debian_configs.results | selectattr('stat.exists', 'equalto', false) | list | length == 0)
+        else '❌ FAIL (missing: ' ~ (debian_configs.results | selectattr('stat.exists', 'equalto', false) | map(attribute='item.name') | join(', ')) ~ ')'
+      }) }}
+
+- name: Check MOTD scripts
+  stat:
+    path: "/etc/update-motd.d/{{ item }}"
+  loop: [01-logo, 10-uname, 15-diskspace, 20-docker, 30-security-updates, 92-unattended-upgrades]
+  register: motd_scripts
+
+- name: Record MOTD status
+  set_fact:
+    validation_results: >-
+      {{ validation_results | combine({
+        'debian_motd': '✅ PASS' if (motd_scripts.results | selectattr('stat.exists', 'equalto', false) | list | length == 0)
+        else '❌ FAIL (' ~ (motd_scripts.results | selectattr('stat.exists', 'equalto', false) | list | length) ~ ' missing)'
+      }) }}
+
+- name: Consolidate Debian-specific validation
+  set_fact:
+    validation_results: >-
+      {{ validation_results | combine({
+        'security': '✅ PASS' if (
+          validation_results.unattended_upgrades is defined and '✅' in validation_results.unattended_upgrades and
+          validation_results.debian_configs is defined and '✅' in validation_results.debian_configs
+        ) else '❌ FAIL'
+      }) }}

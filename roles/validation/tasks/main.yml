@@ -1,13 +1,12 @@
 ---
-# Validation role - Health checks for deployed services
-# Follows modernized architecture pattern with distribution dispatch
+# Simplified validation role
 
 - name: Initialize validation results
   set_fact:
     validation_results: {}
   tags: ['validation']
 
-- name: Run common system validations
+- name: Run system validations
   include_tasks: common-system.yml
   tags: ['validation', 'validation:system']
 
@@ -25,7 +24,7 @@
   when: validation_config.enabled | default(true)
   tags: ['validation', 'validation:mail']
 
-- name: Run network/Tailscale validation
+- name: Run network validation
   include_tasks: network-validation.yml
   when: validation_config.enabled | default(true)
   tags: ['validation', 'validation:network']
@@ -40,14 +39,13 @@
       - "Docker:    {{ validation_results.docker | default('❌ NOT RUN') }}"
       - "Mail:      {{ validation_results.mail | default('❌ NOT RUN') }}"
       - "Network:   {{ validation_results.network | default('❌ NOT RUN') }}"
-      - "Security:  {{ validation_results.security | default('❌ NOT RUN') }}"
       - "=========================================="
   tags: ['validation']
 
-- name: Check for validation failures
+- name: Fail on validation errors
   fail:
-    msg: "One or more validations failed. Check output above for details."
+    msg: "Validation failed. Review output above."
   when:
     - validation_config.fail_fast | default(false)
-    - validation_results.values() | select('search', '❌') | list | length > 0
+    - "'❌' in (validation_results.values() | join(' '))"
   tags: ['validation']

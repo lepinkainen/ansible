@@ -1,173 +1,90 @@
 ---
-# Mail system validation tasks
+# Simplified mail system validation
 
-- name: Validate mailrise container (when enabled)
-  block:
-    - name: Check mailrise container is running
-      docker_container_info:
-        name: mailrise
-      register: mailrise_container
-      when: mail_config.enable_mailrise | default(false)
-
-    - name: Check mailrise port is listening
-      wait_for:
-        port: 8025
-        host: localhost
-        timeout: 5
-      register: mailrise_port_check
-      failed_when: false
-      when: mail_config.enable_mailrise | default(false)
-
-    - name: Set mailrise status
-      set_fact:
-        mailrise_status: "✅ PASS"
-      when:
-        - mail_config.enable_mailrise | default(false)
-        - mailrise_container.exists
-        - mailrise_container.container.State.Status == "running"
-        - mailrise_port_check is succeeded
-
-    - name: Mark mailrise validation failure
-      set_fact:
-        mailrise_status: >-
-          ❌ FAIL (container: {{ 'missing' if not mailrise_container.exists else mailrise_container.container.State.Status }},
-          port: {{ 'not listening' if mailrise_port_check is failed else 'ok' }})
-      when:
-        - mail_config.enable_mailrise | default(false)
-        - not mailrise_container.exists or mailrise_container.container.State.Status != "running" or mailrise_port_check is failed
-
-    - name: Skip mailrise validation (disabled)
-      set_fact:
-        mailrise_status: "⚠️ DISABLED"
-      when: not (mail_config.enable_mailrise | default(false))
-
-  rescue:
-    - name: Mark mailrise validation error
-      set_fact:
-        mailrise_status: "❌ ERROR"
-
-- name: Test mail configuration connectivity
-  block:
-    - name: Test SMTP connectivity to configured host
-      wait_for:
-        host: "{{ vault_smtp_host.split(':')[0] }}"
-        port: "{{ vault_smtp_host.split(':')[1] }}"
-        timeout: 10
-      register: smtp_connectivity
-      when: validation_config.mail_connectivity_test | default(true)
-
-    - name: Set SMTP connectivity status
-      set_fact:
-        smtp_connectivity_status: "✅ PASS"
-      when:
-        - validation_config.mail_connectivity_test | default(true)
-        - smtp_connectivity is succeeded
-
-    - name: Mark SMTP connectivity validation failure
-      set_fact:
-        smtp_connectivity_status: "❌ FAIL (cannot reach {{ vault_smtp_host }})"
-      when:
-        - validation_config.mail_connectivity_test | default(true)
-        - smtp_connectivity is failed
-
-    - name: Skip SMTP connectivity test
-      set_fact:
-        smtp_connectivity_status: "⚠️ SKIPPED"
-      when: not (validation_config.mail_connectivity_test | default(true))
-
-  rescue:
-    - name: Mark SMTP connectivity validation error
-      set_fact:
-        smtp_connectivity_status: "❌ ERROR"
-
-- name: Test Discord webhook connectivity (when configured)
-  block:
-    - name: Test Discord webhook accessibility
-      uri:
-        url: "{{ vault_discord_url }}"
-        method: POST
-        body_format: json
-        body:
-          content: "Ansible validation test from {{ inventory_hostname }} - please ignore"
-        status_code: [200, 204, 429]  # 429 = rate limited but webhook exists
-        timeout: 10
-      register: discord_webhook_test
-      when:
-        - validation_config.mail_connectivity_test | default(true)
-        - vault_discord_url is defined
-        - vault_discord_url.startswith('https://')
-        - mail_config.enable_mailrise | default(false)
-
-    - name: Set Discord webhook status
-      set_fact:
-        discord_webhook_status: "✅ PASS"
-      when:
-        - validation_config.mail_connectivity_test | default(true)
-        - vault_discord_url is defined
-        - vault_discord_url.startswith('https://')
-        - mail_config.enable_mailrise | default(false)
-        - discord_webhook_test is defined
-        - discord_webhook_test is succeeded
-        - discord_webhook_test.status in [200, 204, 429]
-
-    - name: Mark Discord webhook validation failure
-      set_fact:
-        discord_webhook_status: "❌ FAIL (HTTP {{ discord_webhook_test.status | default('timeout') }})"
-      when:
-        - validation_config.mail_connectivity_test | default(true)
-        - vault_discord_url is defined
-        - vault_discord_url.startswith('https://')
-        - mail_config.enable_mailrise | default(false)
-        - discord_webhook_test is defined
-        - discord_webhook_test is succeeded
-        - discord_webhook_test.status not in [200, 204, 429]
-
-    - name: Skip Discord webhook test (not configured, disabled, or non-HTTP URL)
-      set_fact:
-        discord_webhook_status: "⚠️ SKIPPED"
-      when: >
-        not (validation_config.mail_connectivity_test | default(true)) or
-        vault_discord_url is not defined or
-        not vault_discord_url.startswith('https://') or
-        not (mail_config.enable_mailrise | default(false))
-
-  rescue:
-    - name: Mark Discord webhook validation error
-      set_fact:
-        discord_webhook_status: "❌ ERROR"
-
-- name: Validate mail queue status
-  block:
-    - name: Check mail queue (mailq)
-      command: mailq
-      register: mail_queue_check
-      changed_when: false
-      failed_when: false
-
-    - name: Set mail queue status
-      set_fact:
-        mail_queue_status: "✅ PASS"
-      when: mail_queue_check.rc == 0
-
-    - name: Mark mail queue validation failure
-      set_fact:
-        mail_queue_status: "❌ FAIL (mailq returned {{ mail_queue_check.rc }})"
-      when: mail_queue_check.rc != 0
-
-  rescue:
-    - name: Mark mail queue validation error
-      set_fact:
-        mail_queue_status: "❌ ERROR"
-
-- name: Consolidate mail validation results
-  set_fact:
-    validation_results: "{{ validation_results | combine({'mail': mail_overall_status}) }}"
+- name: Validate mailrise container
+  include_tasks: validate-service.yml
   vars:
-    mail_checks:
-      - "{{ mailrise_status | default('❌ ERROR') }}"
-      - "{{ smtp_connectivity_status | default('❌ ERROR') }}"
-      - "{{ discord_webhook_status | default('❌ ERROR') }}"
-      - "{{ mail_queue_status | default('❌ ERROR') }}"
-    mail_overall_status: >-
-      {%- set failures = mail_checks | select('search', '❌') | list -%}
-      {%- if failures | length == 0 -%}✅ PASS{%- else -%}❌ FAIL{%- endif -%}
+    check_name: mailrise
+    port: 8025
+  when: mail_config.enable_mailrise | default(false)
+
+- name: Skip mailrise validation when disabled
+  set_fact:
+    validation_results: "{{ validation_results | combine({'mailrise': '⚠️ DISABLED'}) }}"
+  when: not (mail_config.enable_mailrise | default(false))
+
+- name: Parse SMTP host and port
+  set_fact:
+    smtp_host: "{{ vault_smtp_host.split(':')[0] }}"
+    smtp_port: "{{ vault_smtp_host.split(':')[1] | default('25') }}"
+  when: vault_smtp_host is defined
+
+- name: Test SMTP connectivity
+  wait_for:
+    host: "{{ smtp_host }}"
+    port: "{{ smtp_port }}"
+    timeout: 10
+  register: smtp_test
+  ignore_errors: true
+  when: 
+    - validation_config.mail_connectivity_test | default(true)
+    - vault_smtp_host is defined
+
+- name: Record SMTP status
+  set_fact:
+    validation_results: >-
+      {{ validation_results | combine({
+        'smtp': '✅ PASS' if smtp_test is succeeded else 
+        ('⚠️ SKIPPED' if not (validation_config.mail_connectivity_test | default(true)) or vault_smtp_host is not defined 
+        else '❌ FAIL (cannot reach ' ~ vault_smtp_host | default('unknown') ~ ')')
+      }) }}
+
+- name: Test Discord webhook
+  uri:
+    url: "{{ vault_discord_url }}"
+    method: POST
+    body_format: json
+    body:
+      content: "Ansible validation test from {{ inventory_hostname }}"
+    status_code: [200, 204, 429]
+    timeout: 10
+  register: discord_test
+  ignore_errors: true
+  when:
+    - validation_config.mail_connectivity_test | default(true)
+    - mail_config.enable_mailrise | default(false)
+    - vault_discord_url is defined
+    - vault_discord_url is match('^https://')
+
+- name: Record Discord webhook status
+  set_fact:
+    validation_results: >-
+      {{ validation_results | combine({
+        'discord': '✅ PASS' if discord_test is succeeded else 
+        ('⚠️ SKIPPED' if not (mail_config.enable_mailrise | default(false)) or vault_discord_url is not defined
+        else '❌ FAIL')
+      }) }}
+
+- name: Check mail queue
+  command: mailq
+  register: mailq_check
+  changed_when: false
+  ignore_errors: true
+
+- name: Record mail queue status
+  set_fact:
+    validation_results: >-
+      {{ validation_results | combine({
+        'mail_queue': '✅ PASS' if mailq_check.rc == 0 else '❌ FAIL'
+      }) }}
+
+- name: Consolidate mail validation
+  set_fact:
+    validation_results: >-
+      {{ validation_results | combine({
+        'mail': '✅ PASS' if (
+          (validation_results.mailrise is defined and '❌' not in validation_results.mailrise) and
+          (validation_results.smtp is defined and '❌' not in validation_results.smtp) and
+          (validation_results.mail_queue is defined and '❌' not in validation_results.mail_queue)
+        ) else '❌ FAIL'
+      }) }}

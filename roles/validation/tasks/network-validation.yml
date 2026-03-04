@@ -1,163 +1,67 @@
 ---
-# Network and Tailscale validation tasks
+# Simplified network and Tailscale validation
 
-- name: Validate basic network connectivity
-  block:
-    - name: Test DNS resolution
-      command: nslookup google.com
-      register: dns_test
-      changed_when: false
-      failed_when: false
+- name: Test DNS resolution
+  command: nslookup google.com
+  register: dns_test
+  changed_when: false
+  ignore_errors: true
 
-    - name: Test internet connectivity
-      uri:
-        url: https://httpbin.org/ip
-        method: GET
-        timeout: 10
-      register: internet_test
-      failed_when: false
+- name: Test internet connectivity
+  uri:
+    url: https://httpbin.org/ip
+    method: GET
+    timeout: 10
+  register: internet_test
+  ignore_errors: true
 
-    - name: Set basic network status
-      set_fact:
-        basic_network_status: "✅ PASS"
-      when:
-        - dns_test is defined
-        - internet_test is defined
-        - dns_test.rc == 0
-        - internet_test is succeeded
-        - internet_test.status == 200
+- name: Record basic network status
+  set_fact:
+    validation_results: >-
+      {{ validation_results | combine({
+        'network_basic': '✅ PASS' if (dns_test.rc == 0 and internet_test.status == 200) else 
+        '❌ FAIL (DNS: ' ~ ('ok' if dns_test.rc == 0 else 'failed') ~ 
+        ', internet: ' ~ ('ok' if internet_test.status | default(0) == 200 else 'failed') ~ ')'
+      }) }}
 
-    - name: Mark basic network validation failure
-      set_fact:
-        basic_network_status: >-
-          ❌ FAIL (DNS: {{ 'failed' if dns_test is not defined or dns_test.rc != 0 else 'ok' }},
-          internet: {{ 'failed' if internet_test is not defined or internet_test is failed or internet_test.status != 200 else 'ok' }})
-      when: >
-        dns_test is not defined or internet_test is not defined or
-        dns_test.rc != 0 or internet_test is failed or internet_test.status != 200
+- name: Validate Tailscale
+  include_tasks: validate-service.yml
+  vars:
+    check_name: tailscale
+    service_name: tailscaled
+    command: tailscale status
+  when: tailscale_config.enabled | default(false)
 
-  rescue:
-    - name: Mark basic network validation error
-      set_fact:
-        basic_network_status: "❌ ERROR"
+- name: Skip Tailscale validation when disabled
+  set_fact:
+    validation_results: "{{ validation_results | combine({'tailscale': '⚠️ DISABLED'}) }}"
+  when: not (tailscale_config.enabled | default(false))
 
-- name: Validate Tailscale configuration (when enabled)
-  block:
-    - name: Check Tailscale service status
-      systemd:
-        name: tailscaled
-        state: started
-      check_mode: true
-      register: tailscale_service_check
-      failed_when: false
-      when: tailscale_config.enabled | default(false)
+- name: Validate SSH service
+  include_tasks: validate-service.yml
+  vars:
+    check_name: ssh
+    service_name: "{{ 'ssh' if ansible_os_family == 'Debian' else 'sshd' }}"
+    command: sshd -t
 
-    - name: Get Tailscale status
-      command: tailscale status --json
-      register: tailscale_status_json
-      changed_when: false
-      failed_when: false
-      when: tailscale_config.enabled | default(false)
+- name: Check SSH hardening status
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    line: "PasswordAuthentication no"
+    state: present
+  check_mode: true
+  register: ssh_hardening
 
-    - name: Parse Tailscale status
-      set_fact:
-        tailscale_status_data: "{{ tailscale_status_json.stdout | from_json }}"
-      when:
-        - tailscale_config.enabled | default(false)
-        - tailscale_status_json.rc == 0
-        - tailscale_status_json.stdout | length > 0
+- name: Record SSH hardening status
+  set_fact:
+    ssh_hardening_applied: "{{ 'yes' if ssh_hardening is not changed else 'no' }}"
 
-    - name: Check Tailscale IP assignment
-      set_fact:
-        tailscale_has_ip: "{{ tailscale_status_data.TailscaleIPs | length > 0 }}"
-      when:
-        - tailscale_config.enabled | default(false)
-        - tailscale_status_data is defined
-
-    - name: Set Tailscale status
-      set_fact:
-        tailscale_status: "✅ PASS"
-      when:
-        - tailscale_config.enabled | default(false)
-        - tailscale_service_check is not changed
-        - tailscale_status_json.rc == 0
-        - tailscale_has_ip | default(false)
-
-    - name: Mark Tailscale validation failure
-      set_fact:
-        tailscale_status: >-
-          ❌ FAIL (service: {{ 'stopped' if tailscale_service_check is changed else 'ok' }},
-          status: {{ 'error' if tailscale_status_json.rc != 0 else 'ok' }},
-          ip: {{ 'none' if not (tailscale_has_ip | default(false)) else 'assigned' }})
-      when:
-        - tailscale_config.enabled | default(false)
-        - tailscale_service_check is changed or tailscale_status_json.rc != 0 or not (tailscale_has_ip | default(false))
-
-    - name: Skip Tailscale validation (disabled)
-      set_fact:
-        tailscale_status: "⚠️ DISABLED"
-      when: not (tailscale_config.enabled | default(false))
-
-  rescue:
-    - name: Mark Tailscale validation error
-      set_fact:
-        tailscale_status: "❌ ERROR"
-
-- name: Validate SSH configuration and access
-  block:
-    - name: Check SSH daemon status
-      systemd:
-        name: "{{ 'ssh' if ansible_os_family == 'Debian' else 'sshd' }}"
-        state: started
-      check_mode: true
-      register: ssh_service_check
-      failed_when: false
-
-    - name: Check SSH configuration syntax
-      command: sshd -t
-      register: ssh_config_test
-      changed_when: false
-      failed_when: false
-      become: true
-
-    - name: Check if SSH hardening has been applied
-      lineinfile:
-        path: /etc/ssh/sshd_config
-        line: "PasswordAuthentication no"
-        state: present
-      check_mode: true
-      register: ssh_hardening_check
-
-    - name: Set SSH status
-      set_fact:
-        ssh_status: "✅ PASS"
-      when:
-        - ssh_service_check is not changed
-        - ssh_config_test.rc == 0
-
-    - name: Mark SSH validation failure
-      set_fact:
-        ssh_status: >-
-          ❌ FAIL (service: {{ 'stopped' if ssh_service_check is changed else 'ok' }},
-          config: {{ 'invalid' if ssh_config_test.rc != 0 else 'ok' }})
-      when: ssh_service_check is changed or ssh_config_test.rc != 0
-
-    - name: Add SSH hardening info to validation results
-      set_fact:
-        ssh_hardening_applied: "{{ 'yes' if ssh_hardening_check is not changed else 'no' }}"
-
-  rescue:
-    - name: Mark SSH validation error
-      set_fact:
-        ssh_status: "❌ ERROR"
-
-- name: Validate firewall status (if applicable)
+- name: Check firewall status
   block:
     - name: Check UFW status (Debian)
       command: ufw status
       register: ufw_status
       changed_when: false
-      failed_when: false
       when: ansible_os_family == "Debian"
 
     - name: Check nftables status (Arch)
@@ -166,42 +70,31 @@
         state: started
       check_mode: true
       register: nftables_status
-      failed_when: false
+      ignore_errors: true
       when: ansible_os_family == "Archlinux"
 
-    - name: Set firewall status
+    - name: Record firewall status
       set_fact:
         firewall_status: >-
-          {%- if ansible_os_family == "Debian" -%}
-          {{ 'active' if 'Status: active' in ufw_status.stdout else 'inactive' }}
-          {%- elif ansible_os_family == "Archlinux" -%}
-          {{ 'active' if nftables_status is not changed else 'inactive' }}
-          {%- else -%}
-          unknown
-          {%- endif -%}
+          {{ 'active' if (ansible_os_family == 'Debian' and 'Status: active' in ufw_status.stdout | default('')) 
+             or (ansible_os_family == 'Archlinux' and nftables_status is not changed)
+             else 'inactive' }}
+  ignore_errors: true
 
-  rescue:
-    - name: Mark firewall validation error
-      set_fact:
-        firewall_status: "error"
-
-- name: Consolidate network validation results
+- name: Consolidate network validation
   set_fact:
-    validation_results: "{{ validation_results | combine({'network': network_overall_status}) }}"
-  vars:
-    network_checks:
-      - "{{ basic_network_status | default('❌ ERROR') }}"
-      - "{{ tailscale_status | default('❌ ERROR') }}"
-      - "{{ ssh_status | default('❌ ERROR') }}"
-    network_overall_status: >-
-      {%- set failures = network_checks | select('search', '❌') | list -%}
-      {%- if failures | length == 0 -%}✅ PASS{%- else -%}❌ FAIL{%- endif -%}
+    validation_results: >-
+      {{ validation_results | combine({
+        'network': '✅ PASS' if (
+          validation_results.network_basic is defined and '✅' in validation_results.network_basic and
+          validation_results.ssh is defined and '✅' in validation_results.ssh and
+          (validation_results.tailscale is defined and '❌' not in validation_results.tailscale)
+        ) else '❌ FAIL'
+      }) }}
 
-- name: Display additional network information
+- name: Display network details
   debug:
     msg:
-      - "Network Details:"
-      - "  SSH Hardening Applied: {{ ssh_hardening_applied | default('unknown') }}"
-      - "  Firewall Status: {{ firewall_status | default('unknown') }}"
-      - "  Tailscale Enabled: {{ tailscale_config.enabled | default(false) }}"
+      - "SSH Hardening: {{ ssh_hardening_applied | default('unknown') }}"
+      - "Firewall: {{ firewall_status | default('unknown') }}"
   when: validation_config.detailed_output | default(false)

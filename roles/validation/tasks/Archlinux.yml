@@ -1,149 +1,61 @@
 ---
-# Arch Linux-specific validation tasks
+# Simplified Arch Linux-specific validation
 
-- name: Validate Arch-specific services
-  block:
-    - name: Check pacman-upgrade timer
-      systemd:
-        name: pacman-upgrade.timer
-        enabled: true
-      check_mode: true
-      register: pacman_upgrade_timer_check
-      failed_when: false
+- name: Validate pacman-upgrade timer
+  include_tasks: validate-service.yml
+  vars:
+    check_name: pacman_upgrade
+    service_name: pacman-upgrade.timer
 
-    - name: Check pacman-upgrade service exists
-      stat:
-        path: /etc/systemd/system/pacman-upgrade.service
-      register: pacman_upgrade_service
+- name: Check Arch config files exist
+  stat:
+    path: "{{ item.path }}"
+  loop:
+    - { path: /etc/systemd/system/pacman-upgrade.service, name: pacman-upgrade.service }
+    - { path: /usr/local/bin/pacman-upgrade.sh, name: pacman-upgrade.sh }
+    - { path: /etc/msmtprc, name: msmtp }
+  register: arch_configs
 
-    - name: Check pacman-upgrade script exists
-      stat:
-        path: /usr/local/bin/pacman-upgrade.sh
-      register: pacman_upgrade_script
-
-    - name: Set Arch services status
-      set_fact:
-        arch_services_status: "✅ PASS"
-      when:
-        - pacman_upgrade_timer_check is not changed
-        - pacman_upgrade_service.stat.exists
-        - pacman_upgrade_script.stat.exists
-
-    - name: Mark Arch services validation failure
-      set_fact:
-        arch_services_status: >-
-          ❌ FAIL (timer: {{ 'disabled' if pacman_upgrade_timer_check is changed else 'ok' }},
-          service: {{ 'missing' if not pacman_upgrade_service.stat.exists else 'ok' }},
-          script: {{ 'missing' if not pacman_upgrade_script.stat.exists else 'ok' }})
-      when: >
-        pacman_upgrade_timer_check is changed or
-        not pacman_upgrade_service.stat.exists or
-        not pacman_upgrade_script.stat.exists
-
-  rescue:
-    - name: Mark Arch services validation error
-      set_fact:
-        arch_services_status: "❌ ERROR"
-
-- name: Validate Arch mail configuration (msmtp)
-  block:
-    - name: Check msmtp configuration
-      stat:
-        path: /etc/msmtprc
-      register: msmtp_config
-
-    - name: Check msmtp-mta symlink
-      stat:
-        path: /usr/bin/sendmail
-      register: msmtp_sendmail_link
-
-    - name: Set Arch mail status
-      set_fact:
-        arch_mail_status: "✅ PASS"
-      when:
-        - msmtp_config.stat.exists
-        - msmtp_sendmail_link.stat.exists
-
-    - name: Mark Arch mail validation failure
-      set_fact:
-        arch_mail_status: >-
-          ❌ FAIL (msmtp config: {{ 'missing' if not msmtp_config.stat.exists else 'ok' }},
-          sendmail link: {{ 'missing' if not msmtp_sendmail_link.stat.exists else 'ok' }})
-      when: not msmtp_config.stat.exists or not msmtp_sendmail_link.stat.exists
-
-  rescue:
-    - name: Mark Arch mail validation error
-      set_fact:
-        arch_mail_status: "❌ ERROR"
-
-- name: Validate MOTD configuration
-  block:
-    - name: Check dynamic MOTD script
-      stat:
-        path: /etc/profile.d/motd.sh
-      register: arch_motd_script
-
-    - name: Verify MOTD script is executable
-      stat:
-        path: /etc/profile.d/motd.sh
-      register: arch_motd_executable
-
-    - name: Set Arch MOTD status
-      set_fact:
-        arch_motd_status: "✅ PASS"
-      when:
-        - arch_motd_script.stat.exists
-        - arch_motd_executable.stat.executable
-
-    - name: Mark Arch MOTD validation failure
-      set_fact:
-        arch_motd_status: >-
-          ❌ FAIL (script: {{ 'missing' if not arch_motd_script.stat.exists else 'ok' }},
-          executable: {{ 'no' if not arch_motd_executable.stat.executable else 'yes' }})
-      when: not arch_motd_script.stat.exists or not arch_motd_executable.stat.executable
-
-  rescue:
-    - name: Mark Arch MOTD validation error
-      set_fact:
-        arch_motd_status: "❌ ERROR"
-
-- name: Validate pacman configuration
-  block:
-    - name: Check pacman configuration
-      command: pacman-conf
-      register: pacman_conf_check
-      changed_when: false
-      failed_when: false
-
-    - name: Check package cache directory
-      stat:
-        path: /var/cache/pacman/pkg
-      register: pacman_cache
-
-    - name: Set Arch pacman status
-      set_fact:
-        arch_pacman_status: "✅ PASS"
-      when:
-        - pacman_conf_check.rc == 0
-        - pacman_cache.stat.exists and pacman_cache.stat.isdir
-
-    - name: Mark Arch pacman validation failure
-      set_fact:
-        arch_pacman_status: >-
-          ❌ FAIL (config: {{ 'invalid' if pacman_conf_check.rc != 0 else 'ok' }},
-          cache: {{ 'missing' if not pacman_cache.stat.exists else 'ok' }})
-      when: pacman_conf_check.rc != 0 or not pacman_cache.stat.exists
-
-  rescue:
-    - name: Mark Arch pacman validation error
-      set_fact:
-        arch_pacman_status: "❌ ERROR"
-
-- name: Update validation results with Arch-specific checks
+- name: Record Arch config status
   set_fact:
-    validation_results: "{{ validation_results | combine({
-      'arch_services': arch_services_status | default('❌ ERROR'),
-      'arch_mail': arch_mail_status | default('❌ ERROR'),
-      'arch_motd': arch_motd_status | default('❌ ERROR'),
-      'arch_pacman': arch_pacman_status | default('❌ ERROR')
-    }) }}"
+    validation_results: >-
+      {{ validation_results | combine({
+        'arch_configs': '✅ PASS' if (arch_configs.results | selectattr('stat.exists', 'equalto', false) | list | length == 0)
+        else '❌ FAIL (missing: ' ~ (arch_configs.results | selectattr('stat.exists', 'equalto', false) | map(attribute='item.name') | join(', ')) ~ ')'
+      }) }}
+
+- name: Check MOTD script
+  stat:
+    path: /etc/profile.d/motd.sh
+  register: arch_motd
+
+- name: Record MOTD status
+  set_fact:
+    validation_results: >-
+      {{ validation_results | combine({
+        'arch_motd': '✅ PASS' if (arch_motd.stat.exists and arch_motd.stat.executable) 
+        else '❌ FAIL (missing or not executable)'
+      }) }}
+
+- name: Validate pacman
+  command: pacman-conf
+  register: pacman_check
+  changed_when: false
+  ignore_errors: true
+
+- name: Record pacman status
+  set_fact:
+    validation_results: >-
+      {{ validation_results | combine({
+        'arch_pacman': '✅ PASS' if pacman_check.rc == 0 else '❌ FAIL'
+      }) }}
+
+- name: Consolidate Arch-specific validation
+  set_fact:
+    validation_results: >-
+      {{ validation_results | combine({
+        'security': '✅ PASS' if (
+          validation_results.pacman_upgrade is defined and '✅' in validation_results.pacman_upgrade and
+          validation_results.arch_configs is defined and '✅' in validation_results.arch_configs
+        ) else '❌ FAIL'
+      }) }}

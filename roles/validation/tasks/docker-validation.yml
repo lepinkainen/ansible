@@ -1,130 +1,68 @@
 ---
-# Docker validation tasks
+# Simplified Docker validation using helper
 
-- name: Validate Docker installation and service
-  block:
-    - name: Check Docker service status
-      systemd:
-        name: docker
-        state: started
-      check_mode: true
-      register: docker_service_check
-      failed_when: false
-
-    - name: Check Docker socket availability
-      stat:
-        path: /var/run/docker.sock
-      register: docker_socket
-
-    - name: Check Docker group exists
-      group:
-        name: docker
-        state: present
-      check_mode: true
-      register: docker_group_check
-      failed_when: false
-
-    - name: Set Docker service status
-      set_fact:
-        docker_service_status: "✅ PASS"
-      when:
-        - docker_service_check is not changed
-        - docker_socket.stat.exists
-        - docker_group_check is not changed
-
-    - name: Mark Docker service validation failure
-      set_fact:
-        docker_service_status: >-
-          ❌ FAIL (service: {{ 'stopped' if docker_service_check is changed else 'ok' }},
-          socket: {{ 'missing' if not docker_socket.stat.exists else 'ok' }},
-          group: {{ 'missing' if docker_group_check is changed else 'ok' }})
-      when: >
-        docker_service_check is changed or
-        not docker_socket.stat.exists or
-        docker_group_check is changed
-
-  rescue:
-    - name: Mark Docker service validation error
-      set_fact:
-        docker_service_status: "❌ ERROR"
-
-- name: Validate Docker functionality with smoke test
-  block:
-    - name: Run Docker hello-world smoke test
-      docker_container:
-        name: validation-hello-world
-        image: hello-world
-        state: started
-        auto_remove: true
-        detach: false
-      register: docker_smoke_test
-      when: validation_config.docker_smoke_test | default(true)
-
-    - name: Set Docker smoke test status
-      set_fact:
-        docker_smoke_status: "✅ PASS"
-      when:
-        - validation_config.docker_smoke_test | default(true)
-        - docker_smoke_test is succeeded
-
-    - name: Mark Docker smoke test validation failure
-      set_fact:
-        docker_smoke_status: "❌ FAIL (container failed to run)"
-      when:
-        - validation_config.docker_smoke_test | default(true)
-        - docker_smoke_test is failed
-
-    - name: Skip Docker smoke test
-      set_fact:
-        docker_smoke_status: "⚠️ SKIPPED"
-      when: not (validation_config.docker_smoke_test | default(true))
-
-  rescue:
-    - name: Mark Docker smoke test validation error
-      set_fact:
-        docker_smoke_status: "❌ ERROR"
-
-- name: Validate user Docker group membership
-  block:
-    - name: Check target user Docker group membership
-      command: groups {{ vault_target_user }}
-      register: target_user_groups
-      changed_when: false
-      failed_when: false
-
-    - name: Check deploy user Docker group membership
-      command: groups {{ vault_deploy_user }}
-      register: deploy_user_groups
-      changed_when: false
-      failed_when: false
-
-    - name: Set Docker user groups status
-      set_fact:
-        docker_users_status: "✅ PASS"
-      when:
-        - "'docker' in target_user_groups.stdout"
-        - "'docker' in deploy_user_groups.stdout"
-
-    - name: Mark Docker user groups validation failure
-      set_fact:
-        docker_users_status: >-
-          ❌ FAIL ({{ vault_target_user }}: {{ 'missing' if 'docker' not in target_user_groups.stdout else 'ok' }},
-          {{ vault_deploy_user }}: {{ 'missing' if 'docker' not in deploy_user_groups.stdout else 'ok' }})
-      when: "'docker' not in target_user_groups.stdout or 'docker' not in deploy_user_groups.stdout"
-
-  rescue:
-    - name: Mark Docker user groups validation error
-      set_fact:
-        docker_users_status: "❌ ERROR"
-
-- name: Consolidate Docker validation results
-  set_fact:
-    validation_results: "{{ validation_results | combine({'docker': docker_overall_status}) }}"
+- name: Validate Docker service
+  include_tasks: validate-service.yml
   vars:
-    docker_checks:
-      - "{{ docker_service_status | default('❌ ERROR') }}"
-      - "{{ docker_smoke_status | default('❌ ERROR') }}"
-      - "{{ docker_users_status | default('❌ ERROR') }}"
-    docker_overall_status: >-
-      {%- set failures = docker_checks | select('search', '❌') | list -%}
-      {%- if failures | length == 0 -%}✅ PASS{%- else -%}❌ FAIL{%- endif -%}
+    check_name: docker_service
+    service_name: docker
+    command: docker info
+
+- name: Check Docker socket exists
+  stat:
+    path: /var/run/docker.sock
+  register: docker_socket
+
+- name: Record Docker socket status
+  set_fact:
+    validation_results: >-
+      {{ validation_results | combine({
+        'docker_socket': '✅ PASS' if docker_socket.stat.exists else '❌ FAIL (socket missing)'
+      }) }}
+
+- name: Run Docker smoke test
+  community.docker.docker_container:
+    name: validation-hello-world
+    image: hello-world
+    state: started
+    auto_remove: true
+    detach: false
+  register: docker_smoke
+  ignore_errors: true
+  when: validation_config.docker_smoke_test | default(true)
+
+- name: Record Docker smoke test status
+  set_fact:
+    validation_results: >-
+      {{ validation_results | combine({
+        'docker_smoke': '✅ PASS' if docker_smoke is succeeded else 
+        ('⚠️ SKIPPED' if not (validation_config.docker_smoke_test | default(true)) else '❌ FAIL')
+      }) }}
+
+- name: Check user Docker group membership
+  command: groups {{ item }}
+  loop:
+    - "{{ vault_target_user }}"
+    - "{{ vault_deploy_user }}"
+  register: docker_groups
+  changed_when: false
+  ignore_errors: true
+
+- name: Record Docker groups status
+  set_fact:
+    validation_results: >-
+      {{ validation_results | combine({
+        'docker_users': '✅ PASS' if (docker_groups.results | selectattr('stdout', 'search', 'docker') | list | length == 2) 
+        else '❌ FAIL (users not in docker group)'
+      }) }}
+
+- name: Consolidate Docker validation
+  set_fact:
+    validation_results: >-
+      {{ validation_results | combine({
+        'docker': '✅ PASS' if (
+          validation_results.docker_service is defined and '✅' in validation_results.docker_service and
+          validation_results.docker_socket is defined and '✅' in validation_results.docker_socket and
+          (validation_results.docker_smoke is defined and '❌' not in validation_results.docker_smoke)
+        ) else '❌ FAIL'
+      }) }}
