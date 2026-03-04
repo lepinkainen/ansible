@@ -1,0 +1,11 @@
+---
+# Debian Docker installation
+
+- name: Install Docker packages (Debian)
+  apt:
+    name:
+      - docker.io
+      - docker-compose
+      - docker-doc
+    state: present
+  tags: [docker, install]

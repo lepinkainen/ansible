@@ -1,0 +1,10 @@
+---
+# Arch Linux Docker installation
+
+- name: Install Docker packages (Arch)
+  pacman:
+    name:
+      - docker
+      - docker-compose
+    state: present
+  tags: [docker, install]

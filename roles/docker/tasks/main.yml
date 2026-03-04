@@ -1,16 +1,8 @@
 ---
-- name: Update package cache
-  apt:
-    update_cache: yes
-  tags: [docker, install]
+# Note: apt/pacman cache is updated by system-basics role
 
-- name: Install Docker packages from Debian repository
-  apt:
-    name:
-      - docker.io
-      - docker-cli
-      - docker-doc
-    state: present
+- name: Include distribution-specific tasks
+  include_tasks: "{{ ansible_os_family }}.yml"
   tags: [docker, install]
 
 - name: Start and enable Docker service
