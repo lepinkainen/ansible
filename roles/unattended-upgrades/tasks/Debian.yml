@@ -1,10 +1,6 @@
 ---
 # Debian unattended-upgrades
-- name: Update apt cache (Debian)
-  apt:
-    update_cache: true
-    cache_valid_time: 3600
-  tags: [upgrades, security]
+# Note: apt cache is updated by system-basics role
 
 - name: Install unattended-upgrades package (Debian)
   apt:

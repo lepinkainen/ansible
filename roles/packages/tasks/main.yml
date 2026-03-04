@@ -1,9 +1,5 @@
 ---
-# Update package cache before installation
-- name: Update package cache
-  package:
-    update_cache: yes
-  tags: [packages, install]
+# Note: package cache is updated by system-basics role
 
 - name: Install common and distribution-specific packages
   package:

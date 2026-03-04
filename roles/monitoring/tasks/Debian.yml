@@ -1,8 +1,5 @@
 ---
-- name: Update package cache
-  apt:
-    update_cache: yes
-  tags: [monitoring, packages, system]
+# Note: apt cache is updated by system-basics role
 
 - name: Install prometheus-node-exporter
   package:
