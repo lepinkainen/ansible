@@ -66,9 +66,19 @@
   notify: restart mailrise
   tags: [mail, security, config]
 
+- name: Check if mailrise container is running
+  community.docker.docker_container_info:
+    name: mailrise
+  register: mailrise_container_info
+  when: mail_config.enable_mailrise | default(true) and docker_check.rc == 0
+  tags: [mail, security, config]
+
 - name: Start mailrise container
   command: docker compose up -d
   args:
     chdir: /opt/mailrise
-  when: mail_config.enable_mailrise | default(true) and docker_check.rc == 0
+  when:
+    - mail_config.enable_mailrise | default(true)
+    - docker_check.rc == 0
+    - not (mailrise_container_info.exists | default(false)) or mailrise_container_info.container.State.Status != 'running'
   tags: [mail, security, config]
