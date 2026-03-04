@@ -1,10 +1,10 @@
 ---
-- name: Backup SSH config before hardening
+- name: Backup SSH config before hardening (once)
   copy:
     src: /etc/ssh/sshd_config
-    dest: /etc/ssh/sshd_config.backup.{{ ansible_date_time.epoch }}
+    dest: /etc/ssh/sshd_config.backup.pre-hardening
     remote_src: yes
-    backup: yes
+    force: no  # Don't overwrite if backup already exists
   tags: [ssh-hardening, security, backup]
 
 - name: Disable SSH password authentication
