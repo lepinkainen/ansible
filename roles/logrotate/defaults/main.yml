@@ -1,0 +1,29 @@
+---
+# Logrotate defaults
+
+logrotate_config:
+  # Global options
+  rotate: 4
+  frequency: weekly
+  compress: true
+  delaycompress: true
+  missingok: true
+  notifempty: true
+  create: true
+  dateext: true
+
+  # Custom log configurations
+  custom_logs: []
+  # Example:
+  # - name: myapp
+  #   path: /var/log/myapp/*.log
+  #   rotate: 7
+  #   frequency: daily
+  #   postrotate: "systemctl reload myapp"
+
+  # Docker log rotation (if not using json-file driver with max-size)
+  docker_logs:
+    enabled: true
+    rotate: 3
+    size: 100M
+    frequency: daily

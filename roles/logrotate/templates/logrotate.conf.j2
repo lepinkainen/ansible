@@ -1,0 +1,41 @@
+# Managed by Ansible - local changes will be overwritten
+# See man logrotate for details
+
+# Rotate log files {{ logrotate_config.frequency | default('weekly') }}
+{{ logrotate_config.frequency | default('weekly') }}
+
+# Keep {{ logrotate_config.rotate | default(4) }} weeks worth of backlogs
+rotate {{ logrotate_config.rotate | default(4) }}
+
+# Create new (empty) log files after rotating old ones
+{% if logrotate_config.create | default(true) %}
+create
+{% endif %}
+
+# Use date as a suffix of the rotated file
+{% if logrotate_config.dateext | default(true) %}
+dateext
+{% endif %}
+
+# Compress log files
+{% if logrotate_config.compress | default(true) %}
+compress
+{% endif %}
+
+# Delay compression until next rotation cycle
+{% if logrotate_config.delaycompress | default(true) %}
+delaycompress
+{% endif %}
+
+# Don't error if log file is missing
+{% if logrotate_config.missingok | default(true) %}
+missingok
+{% endif %}
+
+# Don't rotate empty logs
+{% if logrotate_config.notifempty | default(true) %}
+notifempty
+{% endif %}
+
+# Include distribution-specific configs
+include /etc/logrotate.d

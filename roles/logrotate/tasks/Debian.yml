@@ -1,0 +1,9 @@
+---
+# Debian logrotate installation
+# Note: logrotate is typically installed by default on Debian
+
+- name: Ensure logrotate is installed (Debian)
+  apt:
+    name: logrotate
+    state: present
+  tags: [logrotate, install]

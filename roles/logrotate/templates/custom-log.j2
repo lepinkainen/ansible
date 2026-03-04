@@ -1,0 +1,29 @@
+# Managed by Ansible - {{ item.name }} log rotation
+
+{{ item.path }} {
+    {{ item.frequency | default('daily') }}
+    rotate {{ item.rotate | default(7) }}
+{% if item.size is defined %}
+    size {{ item.size }}
+{% endif %}
+    missingok
+    notifempty
+    compress
+    delaycompress
+{% if item.create | default(true) %}
+    create {{ item.create_mode | default('0640') }} {{ item.create_owner | default('root') }} {{ item.create_group | default('root') }}
+{% endif %}
+{% if item.copytruncate | default(false) %}
+    copytruncate
+{% endif %}
+{% if item.postrotate is defined %}
+    postrotate
+        {{ item.postrotate }}
+    endscript
+{% endif %}
+{% if item.prerotate is defined %}
+    prerotate
+        {{ item.prerotate }}
+    endscript
+{% endif %}
+}

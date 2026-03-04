@@ -1,0 +1,15 @@
+# Managed by Ansible - Docker container log rotation
+# This handles logs for containers using json-file logging driver
+# Note: Consider using Docker's built-in log rotation instead:
+#   daemon.json: {"log-driver": "json-file", "log-opts": {"max-size": "10m", "max-file": "3"}}
+
+/var/lib/docker/containers/*/*.log {
+    {{ logrotate_config.docker_logs.frequency | default('daily') }}
+    rotate {{ logrotate_config.docker_logs.rotate | default(3) }}
+    size {{ logrotate_config.docker_logs.size | default('100M') }}
+    missingok
+    notifempty
+    compress
+    delaycompress
+    copytruncate
+}

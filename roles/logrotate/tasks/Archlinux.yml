@@ -1,0 +1,15 @@
+---
+# Arch Linux logrotate installation
+
+- name: Ensure logrotate is installed (Arch)
+  pacman:
+    name: logrotate
+    state: present
+  tags: [logrotate, install]
+
+- name: Enable logrotate timer (Arch)
+  systemd:
+    name: logrotate.timer
+    enabled: yes
+    state: started
+  tags: [logrotate, service]

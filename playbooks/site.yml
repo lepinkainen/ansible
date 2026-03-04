@@ -6,6 +6,7 @@
   roles:
     - system-basics
     - packages
+    - logrotate
     - motd-config
     - user-management
     - mail-config

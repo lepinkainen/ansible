@@ -1,0 +1,49 @@
+---
+# Logrotate configuration
+
+- name: Include distribution-specific tasks
+  include_tasks: "{{ ansible_os_family }}.yml"
+  tags: [logrotate, install]
+
+- name: Configure global logrotate settings
+  template:
+    src: logrotate.conf.j2
+    dest: /etc/logrotate.conf
+    owner: root
+    group: root
+    mode: '0644'
+    backup: yes
+  tags: [logrotate, config]
+
+- name: Deploy Docker log rotation config
+  template:
+    src: docker-logs.j2
+    dest: /etc/logrotate.d/docker-containers
+    owner: root
+    group: root
+    mode: '0644'
+  when: logrotate_config.docker_logs.enabled | default(true)
+  tags: [logrotate, config, docker]
+
+- name: Deploy custom log rotation configs
+  template:
+    src: custom-log.j2
+    dest: "/etc/logrotate.d/{{ item.name }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ logrotate_config.custom_logs | default([]) }}"
+  when: logrotate_config.custom_logs | default([]) | length > 0
+  tags: [logrotate, config]
+
+- name: Verify logrotate configuration
+  command: logrotate -d /etc/logrotate.conf
+  register: logrotate_check
+  changed_when: false
+  failed_when: false
+  tags: [logrotate, verify]
+
+- name: Display logrotate verification result
+  debug:
+    msg: "Logrotate config {{ 'valid' if logrotate_check.rc == 0 else 'has warnings (check /etc/logrotate.conf)' }}"
+  tags: [logrotate, verify]

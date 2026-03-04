@@ -80,6 +80,28 @@ monitoring_config:
     port: 9090
     scrape_interval: "30s"
 
+# Logrotate Configuration
+logrotate_config:
+  rotate: 4
+  frequency: weekly
+  compress: true
+  delaycompress: true
+  missingok: true
+  notifempty: true
+  create: true
+  dateext: true
+  docker_logs:
+    enabled: true
+    rotate: 3
+    size: 100M
+    frequency: daily
+  custom_logs: []
+  # Example custom log:
+  # - name: myapp
+  #   path: /var/log/myapp/*.log
+  #   rotate: 7
+  #   frequency: daily
+
 # Validation Configuration (non-sensitive)
 validation_config:
   enabled: true
