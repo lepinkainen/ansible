@@ -8,32 +8,11 @@ locales:
   - "en_US.UTF-8"
   - "en_GB.UTF-8"
 
-# Common packages across all distributions
-# Note: Package names may differ by distribution - override in group-specific configs
-common_packages:
-  - fish
-  - mosh
-  - tmux
-  - fastfetch
-  - fzf
-  - rsync
-  - btop
-  - htop
-  - curl
-  - figlet
-  - starship
-  - duf
-  - ripgrep
-  - bat
-  - neovim
-  - atuin
-  - eza
-  - direnv
-  - httpie
-  - wget
-  - zoxide
-  - python3
-  - git
+# Common CLI packages are now managed by mise + chezmoi (per-user), NOT ansible.
+# See dotfiles repo: dot_config/mise/config.toml.tmpl ([tools] + [bootstrap.packages]).
+# Ansible only installs system daemons / integration packages — see core_packages
+# in each group's config.yml.
+common_packages: []
 
 # User Configuration
 user_shell: "/usr/bin/fish"
