@@ -8,11 +8,10 @@ locales:
   - "en_US.UTF-8"
   - "en_GB.UTF-8"
 
-# Common CLI packages are now managed by mise + chezmoi (per-user), NOT ansible.
-# See dotfiles repo: dot_config/mise/config.toml.tmpl ([tools] + [bootstrap.packages]).
-# Ansible only installs system daemons / integration packages — see core_packages
-# in each group's config.yml.
-common_packages: []
+# NOTE: CLI packages are managed per-user by mise + chezmoi (dotfiles repo:
+# dot_config/mise/config.toml.tmpl). The old `packages` role was removed; system
+# daemons are installed by their owning roles (unattended-upgrades, mail-config,
+# monitoring).
 
 # User Configuration
 user_shell: "/usr/bin/fish"

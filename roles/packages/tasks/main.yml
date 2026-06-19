@@ -1,8 +1,0 @@
----
-# Note: package cache is updated by system-basics role
-
-- name: Install common and distribution-specific packages
-  package:
-    name: "{{ (common_packages + (core_packages | default([]))) | unique }}"
-    state: present
-  tags: [packages, install]

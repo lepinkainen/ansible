@@ -6,12 +6,9 @@
 package_manager: "pacman"
 motd_path: "/etc/profile.d"
 
-# Arch system daemons / integration packages only.
-# CLI tools (incl. fd, pinentry) are managed by mise — see dotfiles repo.
-core_packages:
-  - msmtp
-  - msmtp-mta
-  - prometheus-node-exporter
+# NOTE: no package list here. CLI tools are managed by mise/chezmoi; system
+# daemons (msmtp + msmtp-mta via mail-config, prometheus-node-exporter via
+# monitoring) are installed by their own roles.
 
 # User Configuration - Arch uses wheel group
 user_groups:

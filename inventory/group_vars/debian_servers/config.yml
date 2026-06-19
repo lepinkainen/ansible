@@ -6,12 +6,9 @@
 package_manager: "apt"
 motd_path: "/etc/update-motd.d"
 
-# Debian system daemons / integration packages only.
-# CLI tools (incl. fd, pinentry-tty) are managed by mise — see dotfiles repo.
-core_packages:
-  - unattended-upgrades
-  - ssmtp
-  - prometheus-node-exporter
+# NOTE: no package list here. CLI tools are managed by mise/chezmoi; system
+# daemons (unattended-upgrades, ssmtp, prometheus-node-exporter) are installed by
+# their own roles.
 
 # User Configuration - Debian uses sudo group
 user_groups:
