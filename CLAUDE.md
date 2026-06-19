@@ -8,7 +8,9 @@ This Ansible project automates Debian 13 and Arch Linux server provisioning with
 
 **Distribution Support**: Supports both Debian-based and Arch Linux systems through group-based inventory organization with shared common configuration and distribution-specific overrides.
 
-**Current Roles**: system-basics, packages, user-management, motd-config, mail-config, unattended-upgrades, tailscale, docker, ssh-hardening
+**Current Roles**: system-basics, logrotate, motd-config, user-management, mail-config, unattended-upgrades, tailscale, docker, monitoring, validation, ssh-hardening
+
+**Package management**: CLI tools and dev runtimes are managed per-user by **mise + chezmoi** (see the dotfiles repo's `dot_config/mise/config.toml.tmpl`), NOT by ansible. The former `packages` role was removed; ansible only installs system daemons, and each is installed by its owning role (unattended-upgrades, mail-config, monitoring).
 
 ## Critical Architecture Details
 
@@ -58,8 +60,8 @@ inventory/
 - `package_manager`: "apt" (Debian) or "pacman" (Arch)
 - `motd_path`: "/etc/update-motd.d" (Debian) or "/etc/profile.d" (Arch)
 - `user_groups`: ["sudo"] (Debian) or ["wheel"] (Arch)
-- `common_packages`: Shared across distributions (defined in all/config.yml)
-- `core_packages`: Distribution-specific packages (merged with common_packages in roles)
+
+(Package lists — `common_packages`/`core_packages` — no longer exist; CLI packages are managed by mise/chezmoi.)
 
 **Role Implementation**: **Modernized Architecture** - All current roles follow the `include_tasks: "{{ ansible_os_family }}.yml"` pattern for distribution-specific logic. Each role's `main.yml` handles common tasks and includes OS-specific task files (`Debian.yml`, `Archlinux.yml`) as needed.
 
@@ -165,7 +167,6 @@ ansible-playbook playbooks/debian-upgrade.yml          # Actual upgrade
 
 - `timezone`: Server timezone (default: Europe/Helsinki)
 - `locales`: System locales (default: en_US.UTF-8, en_GB.UTF-8)
-- `common_packages`: Packages shared across all distributions
 - `user_shell`: Default shell (/usr/bin/fish)
 - `motd_config.*`: MOTD customization options
 - `auto_reboot_config.*`: Common reboot settings
@@ -177,7 +178,6 @@ ansible-playbook playbooks/debian-upgrade.yml          # Actual upgrade
 
 - `package_manager`: "apt" (Debian) or "pacman" (Arch)
 - `motd_path`: Distribution-specific MOTD directory
-- `core_packages`: Distribution-specific packages (merged with common_packages)
 - `user_groups`: ["sudo"] (Debian) or ["wheel"] (Arch)
 
 ## Role-Specific Implementation Notes
@@ -188,11 +188,9 @@ ansible-playbook playbooks/debian-upgrade.yml          # Actual upgrade
 - **Common tasks**: Hostname setting via `hostname` module, UTF-8 locales via `locale-gen`, timezone via `timezone` module
 - **Distribution-specific**: Package cache updates (apt/pacman) in separate `Debian.yml`/`Archlinux.yml` files
 
-### packages  
+### packages (removed)
 
-- **Simplified architecture**: Uses generic `package` module (auto-detects apt/pacman)
-- **Package management**: Combines `common_packages` (shared) + `core_packages` (distribution-specific)
-- **Two-step process**: Cache update first, then package installation
+- CLI tools and dev runtimes are managed per-user by **mise + chezmoi** (dotfiles repo: `dot_config/mise/config.toml.tmpl`). The ansible `packages` role was deleted; system daemons are installed by their owning roles.
 
 ### motd-config
 
@@ -265,7 +263,7 @@ To add support for a new distribution (e.g., Ubuntu, RHEL):
 
 1. **Inventory group**: Add new group to `inventory/production.yml`
 2. **Group variables**: Create `inventory/group_vars/new_distro_servers/` with `config.yml`, `main.yml`, and `vault.yml`
-3. **Distribution variables**: Define `package_manager`, `motd_path`, `user_groups`, and `core_packages` in the new config.yml
+3. **Distribution variables**: Define `package_manager`, `motd_path`, and `user_groups` in the new config.yml (CLI packages are handled by mise/chezmoi, not ansible)
 4. **Role updates**: All roles follow the modernized `include_tasks: "{{ ansible_os_family }}.yml"` pattern. Create new distribution-specific task files (e.g., `Ubuntu.yml`) for each role.
 5. **Test thoroughly**: Use `--check --diff` to verify behavior before deployment
 
